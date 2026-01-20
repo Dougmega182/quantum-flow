@@ -1,24 +1,12 @@
-import uuid
-from sqlalchemy import String, Text, Enum
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Column, Integer, String, Text, DateTime
+from sqlalchemy.sql import func
 from app.database import Base
-import enum
-
-class IntentType(enum.Enum):
-    task = "task"
-    message = "message"
-    reminder = "reminder"
-    idea = "idea"
 
 class Intent(Base):
     __tablename__ = "intents"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        primary_key=True,
-        default=uuid.uuid4
-    )
-    type: Mapped[IntentType] = mapped_column(Enum(IntentType))
-    title: Mapped[str] = mapped_column(String(255))
-    content: Mapped[str] = mapped_column(Text)
+    id = Column(Integer, primary_key=True, index=True)
+    source = Column(String(50), nullable=False)  # email, voice, manual
+    content = Column(Text, nullable=False)
+    status = Column(String(20), default="inbox")  # inbox | clarified | scheduled
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

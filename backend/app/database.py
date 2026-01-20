@@ -1,9 +1,13 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, DeclarativeBase
-from app.config import DATABASE_URL
+from sqlalchemy.orm import sessionmaker, declarative_base
+import os
 
-engine = create_engine(DATABASE_URL, echo=False)
-SessionLocal = sessionmaker(bind=engine)
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql+psycopg2://quantum:quantum@db:5432/quantum_flow"
+)
 
-class Base(DeclarativeBase):
-    pass
+engine = create_engine(DATABASE_URL, future=True)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+Base = declarative_base()

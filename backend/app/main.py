@@ -1,6 +1,7 @@
 from fastapi import FastAPI
-from app.routes.capture import router as capture_router
 
-app = FastAPI(title="Quantum Flow")
+app = FastAPI(title="Quantum Flow API")
 
-app.include_router(capture_router)
+@app.get("/health")
+def health():
+    return {"status": "ok"}
