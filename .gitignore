@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+env/
+
+# Env
+.env
+
+# Docker
+pgdata/
+
+# IDE
+.idea/
+.vscode/
+.antigravity/
+
+# OS
+.DS_Store
+Thumbs.db
