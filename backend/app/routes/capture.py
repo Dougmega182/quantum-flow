@@ -4,7 +4,7 @@ from app.database import SessionLocal
 from app.models.intent import Intent
 from app.schemas.intent import IntentCreate
 
-router = APIRouter(prefix="/capture")
+router = APIRouter(prefix="/capture", tags=["capture"])
 
 def get_db():
     db = SessionLocal()
@@ -14,7 +14,10 @@ def get_db():
         db.close()
 
 @router.post("/")
-def capture_intent(data: IntentCreate, db: Session = Depends(get_db)):
+def capture_intent(
+    data: IntentCreate,
+    db: Session = Depends(get_db)
+):
     intent = Intent(
         type=data.type,
         title=data.title,
@@ -22,4 +25,9 @@ def capture_intent(data: IntentCreate, db: Session = Depends(get_db)):
     )
     db.add(intent)
     db.commit()
-    return {"status": "captured", "id": str(intent.id)}
+    db.refresh(intent)
+
+    return {
+        "status": "captured",
+        "id": str(intent.id)
+    }

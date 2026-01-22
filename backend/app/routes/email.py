@@ -4,7 +4,7 @@ from app.database import SessionLocal
 from app.models.intent import Intent, IntentType
 from app.schemas.email import EmailIngest
 
-router = APIRouter(prefix="/ingest/email")
+router = APIRouter(prefix="/ingest/email", tags=["email"])
 
 def get_db():
     db = SessionLocal()
@@ -14,7 +14,10 @@ def get_db():
         db.close()
 
 @router.post("/")
-def ingest_email(data: EmailIngest, db: Session = Depends(get_db)):
+def ingest_email(
+    data: EmailIngest,
+    db: Session = Depends(get_db)
+):
     intent = Intent(
         type=IntentType.message,
         title=data.subject,
@@ -22,6 +25,7 @@ def ingest_email(data: EmailIngest, db: Session = Depends(get_db)):
     )
     db.add(intent)
     db.commit()
+    db.refresh(intent)
 
     return {
         "status": "ingested",
