@@ -1,13 +1,20 @@
-from pydantic import BaseModel
-from enum import Enum
+from pydantic import BaseModel, constr
+from typing import Optional
 
-class IntentType(str, Enum):
-    task = "task"
-    message = "message"
-    reminder = "reminder"
-    idea = "idea"
+class IntentBase(BaseModel):
+    name: constr(strip_whitespace=True, min_length=1, max_length=255)
+    description: Optional[str] = None
 
-class IntentCreate(BaseModel):
-    type: IntentType
-    title: str
-    content: str
+class IntentCreate(IntentBase):
+    pass
+
+class IntentUpdate(BaseModel):
+    description: Optional[str] = None
+
+class IntentOut(BaseModel):
+    id: int
+    name: str
+    description: Optional[str]
+
+    class Config:
+        from_attributes = True
