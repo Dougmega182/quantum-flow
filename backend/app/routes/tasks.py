@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from app.db import SessionLocal
 from app import models
@@ -12,14 +12,12 @@ router = APIRouter(prefix="/v1/tasks", tags=["tasks"])
 DEFAULT_USER_ID = 1
 ALLOWED_STATUS = {"open", "in_progress", "done"}
 
-
 def get_db():
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
-
 
 @router.get("", response_model=TaskList)
 def list_tasks(
@@ -28,6 +26,7 @@ def list_tasks(
     priority: Optional[str] = Query(None),
     due_before: Optional[datetime] = Query(None),
     due_after: Optional[datetime] = Query(None),
+    view: Optional[str] = Query(None, description="today|overdue|upcoming"),
     q: Optional[str] = Query(None),
     limit: int = 50,
     offset: int = 0,
@@ -38,25 +37,41 @@ def list_tasks(
         models.Task.deleted_at.is_(None),
         models.Task.user_id == DEFAULT_USER_ID,
     )
+
     if status:
         if status not in ALLOWED_STATUS:
             raise HTTPException(status_code=422, detail="INVALID_STATUS")
         query = query.filter(models.Task.status == status)
+
     if intent_id:
         query = query.filter(models.Task.intent_id == intent_id)
+
     if priority:
         query = query.filter(models.Task.priority == priority)
+
+    # Derived views
+    now = datetime.utcnow()
+    if view == "today":
+        start = datetime(now.year, now.month, now.day)
+        end = start + timedelta(days=1)
+        query = query.filter(models.Task.due_at >= start, models.Task.due_at < end)
+    elif view == "overdue":
+        query = query.filter(models.Task.due_at < now, models.Task.status != "done")
+    elif view == "upcoming":
+        query = query.filter(models.Task.due_at >= now)
+
     if due_before:
         query = query.filter(models.Task.due_at <= due_before)
     if due_after:
         query = query.filter(models.Task.due_at >= due_after)
+
     if q:
         like = f"%{q}%"
         query = query.filter(models.Task.title.ilike(like) | models.Task.description.ilike(like))
+
     total = query.count()
     items = query.order_by(models.Task.due_at.nulls_last(), models.Task.id).offset(offset).limit(limit).all()
     return TaskList(items=items, limit=limit, offset=offset, total=total)
-
 
 def _get_task_or_404(db: Session, task_id: int):
     task = db.get(models.Task, task_id)
@@ -64,11 +79,9 @@ def _get_task_or_404(db: Session, task_id: int):
         raise HTTPException(status_code=404, detail="TASK_NOT_FOUND")
     return task
 
-
 @router.get("/{task_id}", response_model=TaskOut)
 def get_task(task_id: int, db: Session = Depends(get_db)):
     return _get_task_or_404(db, task_id)
-
 
 @router.post("", response_model=TaskOut, status_code=201)
 def create_task(payload: TaskCreate, db: Session = Depends(get_db)):
@@ -81,7 +94,6 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(task)
     return task
-
 
 @router.patch("/{task_id}", response_model=TaskOut)
 def update_task(task_id: int, payload: TaskUpdate, db: Session = Depends(get_db)):
@@ -102,7 +114,6 @@ def update_task(task_id: int, payload: TaskUpdate, db: Session = Depends(get_db)
     db.refresh(task)
     return task
 
-
 @router.post("/{task_id}/complete", response_model=TaskOut)
 def complete_task(task_id: int, db: Session = Depends(get_db)):
     task = _get_task_or_404(db, task_id)
@@ -112,7 +123,6 @@ def complete_task(task_id: int, db: Session = Depends(get_db)):
     db.refresh(task)
     return task
 
-
 @router.post("/{task_id}/reopen", response_model=TaskOut)
 def reopen_task(task_id: int, db: Session = Depends(get_db)):
     task = _get_task_or_404(db, task_id)
@@ -121,7 +131,6 @@ def reopen_task(task_id: int, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(task)
     return task
-
 
 @router.delete("/{task_id}")
 def delete_task(task_id: int, db: Session = Depends(get_db)):

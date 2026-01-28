@@ -12,6 +12,8 @@ class IntentList(BaseModel):
     limit: int
     offset: int
     total: int
+    class Config:
+        from_attributes = True
 
 router = APIRouter(prefix="/v1/intents", tags=["intents"])
 

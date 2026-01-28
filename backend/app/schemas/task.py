@@ -10,7 +10,7 @@ class TaskBase(BaseModel):
     due_at: Optional[datetime] = None
 
 class TaskCreate(TaskBase):
-    pass
+    status: Optional[str] = "open"  # allow override, validated in router
 
 class TaskUpdate(BaseModel):
     title: Optional[constr(strip_whitespace=True, min_length=1, max_length=255)] = None
