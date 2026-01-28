@@ -19,6 +19,7 @@ def main():
     Base.metadata.create_all(engine)
     db = SessionLocal()
     try:
+        # intents
         for seed in SEED_INTENTS:
             existing = db.query(Intent).filter(Intent.name == seed["name"]).first()
             if existing:
@@ -27,6 +28,7 @@ def main():
             else:
                 db.add(Intent(**seed))
 
+        # default user
         user = db.query(User).filter_by(email="demo@example.com").first()
         if not user:
             user = User(email="demo@example.com")
@@ -34,9 +36,11 @@ def main():
             db.commit()
             db.refresh(user)
 
+        # sample task
         if not db.query(Task).filter_by(title="Sample task").first():
             db.add(Task(user_id=user.id, title="Sample task", description="First task", intent_id=None))
 
+        # sample template
         tpl = db.query(TaskTemplate).filter_by(title="Daily review").first()
         if not tpl:
             tpl = TaskTemplate(
@@ -44,11 +48,13 @@ def main():
                 title="Daily review",
                 description="Plan the day",
                 priority="med",
+                default_due_days=None,
             )
             db.add(tpl)
             db.commit()
             db.refresh(tpl)
 
+        # sample recurrence rule
         rule = db.query(RecurrenceRule).filter_by(template_id=tpl.id).first()
         if not rule:
             rule = RecurrenceRule(
@@ -58,7 +64,10 @@ def main():
                 interval=1,
             )
             db.add(rule)
+
         db.commit()
+    finally:
+        db.close()
 
 if __name__ == "__main__":
     main()

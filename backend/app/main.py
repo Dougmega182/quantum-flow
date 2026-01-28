@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.routes import intents
 from app.routes import tasks
 from app.routes import task_templates, recurrence
+from app.routes import integrations
 
 API_KEY = os.getenv("API_KEY")
 ALLOW_ORIGINS = [o.strip() for o in os.getenv("ALLOW_ORIGINS", "*").split(",")]
@@ -51,3 +52,4 @@ app.include_router(intents.router, dependencies=[Depends(require_api_key)])
 app.include_router(tasks.router, dependencies=[Depends(require_api_key)])
 app.include_router(task_templates.router, dependencies=[Depends(require_api_key)])
 app.include_router(recurrence.router, dependencies=[Depends(require_api_key)])
+app.include_router(integrations.router, dependencies=[Depends(require_api_key)])

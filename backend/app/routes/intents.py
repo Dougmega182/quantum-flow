@@ -2,7 +2,6 @@ from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-
 from app.db import SessionLocal
 from app import models
 from app.schemas.intent import IntentCreate, IntentUpdate, IntentOut

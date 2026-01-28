@@ -3,3 +3,6 @@ from app.models.user import User
 from app.models.task import Task
 from app.models.task_template import TaskTemplate
 from app.models.recurrence_rule import RecurrenceRule
+from app.models.integration import Integration
+from app.models.integration_event import IntegrationEvent
+from app.models.external_event import ExternalEvent

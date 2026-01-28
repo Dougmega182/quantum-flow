@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import Optional
 from datetime import datetime, timedelta
-
 from app.db import SessionLocal
 from app import models
 from app.schemas.task import TaskCreate, TaskUpdate, TaskOut, TaskList
