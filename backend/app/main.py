@@ -4,6 +4,7 @@ from fastapi import FastAPI, Depends, Header, HTTPException, status, Request, Re
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes import intents
 from app.routes import tasks
+from app.routes import task_templates, recurrence
 
 API_KEY = os.getenv("API_KEY")
 ALLOW_ORIGINS = [o.strip() for o in os.getenv("ALLOW_ORIGINS", "*").split(",")]
@@ -48,3 +49,5 @@ def metrics():
 # Apply API key to all intent routes
 app.include_router(intents.router, dependencies=[Depends(require_api_key)])
 app.include_router(tasks.router, dependencies=[Depends(require_api_key)])
+app.include_router(task_templates.router, dependencies=[Depends(require_api_key)])
+app.include_router(recurrence.router, dependencies=[Depends(require_api_key)])

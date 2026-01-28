@@ -4,6 +4,8 @@ from app.db import Base, DATABASE_URL
 from app.models.intent import Intent
 from app.models.user import User
 from app.models.task import Task
+from app.models.task_template import TaskTemplate
+from app.models.recurrence_rule import RecurrenceRule
 
 SEED_INTENTS = [
     {"name": "capture.task", "description": "Create a task from captured snippet"},
@@ -35,9 +37,28 @@ def main():
         if not db.query(Task).filter_by(title="Sample task").first():
             db.add(Task(user_id=user.id, title="Sample task", description="First task", intent_id=None))
 
+        tpl = db.query(TaskTemplate).filter_by(title="Daily review").first()
+        if not tpl:
+            tpl = TaskTemplate(
+                user_id=user.id,
+                title="Daily review",
+                description="Plan the day",
+                priority="med",
+            )
+            db.add(tpl)
+            db.commit()
+            db.refresh(tpl)
+
+        rule = db.query(RecurrenceRule).filter_by(template_id=tpl.id).first()
+        if not rule:
+            rule = RecurrenceRule(
+                user_id=user.id,
+                template_id=tpl.id,
+                freq="daily",
+                interval=1,
+            )
+            db.add(rule)
         db.commit()
-    finally:
-        db.close()
 
 if __name__ == "__main__":
     main()
