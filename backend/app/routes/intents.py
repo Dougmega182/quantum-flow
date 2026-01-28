@@ -1,11 +1,11 @@
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
 
 from app.db import SessionLocal
 from app import models
 from app.schemas.intent import IntentCreate, IntentUpdate, IntentOut
-from pydantic import BaseModel
 
 class IntentList(BaseModel):
     items: List[IntentOut]
@@ -30,11 +30,11 @@ def list_intents(q: Optional[str] = None, limit: int = 50, offset: int = 0, db: 
         query = query.filter(models.Intent.name.ilike(f"%{q}%"))
     total = query.count()
     items = query.order_by(models.Intent.id).offset(offset).limit(limit).all()
-    return {"items": items, "limit": limit, "offset": offset, "total": total}
+    return IntentList(items=items, limit=limit, offset=offset, total=total)
 
 @router.get("/{intent_id}", response_model=IntentOut)
 def get_intent(intent_id: int, db: Session = Depends(get_db)):
-    intent = db.query(models.Intent).get(intent_id)
+    intent = db.get(models.Intent, intent_id)
     if not intent:
         raise HTTPException(status_code=404, detail="INTENT_NOT_FOUND")
     return intent
@@ -52,7 +52,7 @@ def create_intent(payload: IntentCreate, db: Session = Depends(get_db)):
 
 @router.patch("/{intent_id}", response_model=IntentOut)
 def update_intent(intent_id: int, payload: IntentUpdate, db: Session = Depends(get_db)):
-    intent = db.query(models.Intent).get(intent_id)
+    intent = db.get(models.Intent, intent_id)
     if not intent:
         raise HTTPException(status_code=404, detail="INTENT_NOT_FOUND")
     if payload.description is not None:
