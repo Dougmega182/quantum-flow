@@ -1,0 +1,1 @@
+from app.schemas.intent import IntentCreate, IntentUpdate, IntentOut  # noqa: F401
