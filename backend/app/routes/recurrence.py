@@ -1,8 +1,9 @@
+from datetime import datetime, timedelta
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
-from app.db import SessionLocal
 from app import models
+from app.db import SessionLocal
 from app.schemas.recurrence_rule import RecurrenceRuleCreate, RecurrenceRuleOut
 
 router = APIRouter(prefix="/v1/recurrence", tags=["recurrence"])
@@ -16,10 +17,14 @@ def get_db():
     finally:
         db.close()
 
-@router.get("", response_model=list[RecurrenceRuleOut])
+@router.get("", response_model=List[RecurrenceRuleOut])
 def list_rules(db: Session = Depends(get_db)):
-    q = db.query(models.RecurrenceRule).filter(models.RecurrenceRule.user_id == DEFAULT_USER_ID)
-    return q.order_by(models.RecurrenceRule.id).all()
+    return (
+        db.query(models.RecurrenceRule)
+        .filter(models.RecurrenceRule.user_id == DEFAULT_USER_ID)
+        .order_by(models.RecurrenceRule.id)
+        .all()
+    )
 
 @router.post("", response_model=RecurrenceRuleOut, status_code=status.HTTP_201_CREATED)
 def create_rule(payload: RecurrenceRuleCreate, db: Session = Depends(get_db)):
@@ -40,20 +45,16 @@ def delete_rule(rule_id: int, db: Session = Depends(get_db)):
     db.delete(rule); db.commit()
     return {"status": "deleted"}
 
-# Simple materialization: create next occurrence for each rule
 @router.post("/materialize")
 def materialize(db: Session = Depends(get_db)):
     now = datetime.utcnow()
-    created = []
+    created = 0
     rules = db.query(models.RecurrenceRule).filter(models.RecurrenceRule.user_id == DEFAULT_USER_ID).all()
     for rule in rules:
         tpl = db.get(models.TaskTemplate, rule.template_id)
         if not tpl:
             continue
-        # naive next occurrence: always create one new task now with due_at offset if provided
-        due = None
-        if tpl.default_due_days is not None:
-            due = now + timedelta(days=tpl.default_due_days)
+        due = (now + timedelta(days=tpl.default_due_days)) if tpl.default_due_days is not None else None
         task = models.Task(
             user_id=DEFAULT_USER_ID,
             intent_id=tpl.intent_id,
@@ -65,6 +66,6 @@ def materialize(db: Session = Depends(get_db)):
         )
         db.add(task)
         rule.last_materialized_at = now
-        created.append(task)
+        created += 1
     db.commit()
-    return {"created": len(created)}
+    return {"created": created}

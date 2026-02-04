@@ -23,16 +23,16 @@ class TaskUpdate(BaseModel):
 class TaskOut(BaseModel):
     id: int
     user_id: int
-    intent_id: Optional[int]
+    intent_id: int | None
     title: str
-    description: Optional[str]
+    description: str | None
     status: str
-    priority: Optional[str]
-    due_at: Optional[datetime]
+    priority: str | None
+    due_at: datetime | None
     created_at: datetime
     updated_at: datetime
-    completed_at: Optional[datetime]
-    deleted_at: Optional[datetime]
+    completed_at: datetime | None
+    deleted_at: datetime | None
 
     class Config:
         from_attributes = True
@@ -42,6 +42,3 @@ class TaskList(BaseModel):
     limit: int
     offset: int
     total: int
-
-    class Config:
-        from_attributes = True

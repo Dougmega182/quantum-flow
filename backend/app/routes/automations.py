@@ -3,10 +3,12 @@ from sqlalchemy.orm import Session
 from typing import List
 from datetime import datetime
 import json
-
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
 from app.db import SessionLocal
 from app import models
-from app.schemas.automation import AutomationCreate, AutomationUpdate, AutomationOut, AutomationRunOut
+from app.schemas.automation import AutomationRunOut
+from app.schemas.automation import AutomationCreate, AutomationUpdate, AutomationOut
 
 router = APIRouter(prefix="/v1/automations", tags=["automations"])
 DEFAULT_USER_ID = 1
@@ -21,12 +23,6 @@ def get_db():
 @router.get("", response_model=List[AutomationOut])
 def list_automations(db: Session = Depends(get_db)):
     return db.query(models.Automation).filter(models.Automation.user_id == DEFAULT_USER_ID).all()
-
-@router.post("", response_model=AutomationOut, status_code=status.HTTP_201_CREATED)
-def create_automation(payload: AutomationCreate, db: Session = Depends(get_db)):
-    auto = models.Automation(user_id=DEFAULT_USER_ID, **payload.model_dump())
-    db.add(auto); db.commit(); db.refresh(auto)
-    return auto
 
 @router.get("/{automation_id}", response_model=AutomationOut)
 def get_automation(automation_id: int, db: Session = Depends(get_db)):
@@ -54,13 +50,30 @@ def delete_automation(automation_id: int, db: Session = Depends(get_db)):
     db.delete(auto); db.commit()
     return {"status": "deleted"}
 
-# Run automations on demand (very simple stub)
-@router.post("/{automation_id}/run", response_model=AutomationRunOut)
-def run_automation(automation_id: int, db: Session = Depends(get_db)):
-    auto = db.get(models.Automation, automation_id)
-    if not auto or auto.user_id != DEFAULT_USER_ID:
-        raise HTTPException(status_code=404, detail="AUTOMATION_NOT_FOUND")
-
+@router.post("/materialize")
+def materialize(db: Session = Depends(get_db)):
+    now = datetime.utcnow()
+    created = 0
+    rules = db.query(models.RecurrenceRule).filter(models.RecurrenceRule.user_id == DEFAULT_USER_ID).all()
+    for rule in rules:
+        tpl = db.get(models.TaskTemplate, rule.template_id)
+        if not tpl:
+            continue
+        due = (now + timedelta(days=tpl.default_due_days)) if tpl.default_due_days is not None else None
+        task = models.Task(
+            user_id=DEFAULT_USER_ID,
+            intent_id=tpl.intent_id,
+            title=tpl.title,
+            description=tpl.description,
+            priority=tpl.priority,
+            due_at=due,
+            status="open",
+        )
+        db.add(task)
+        rule.last_materialized_at = now
+        created += 1
+    db.commit()
+    return {"created": created}
 @router.post("/run-all", response_model=list[AutomationRunOut])
 def run_all(db: Session = Depends(get_db)):
     runs = []
@@ -69,10 +82,16 @@ def run_all(db: Session = Depends(get_db)):
         models.Automation.active == True
     ).all()
     for auto in autos:
-        run_resp = run_automation(auto.id, db)  # reuse logic
-        runs.append(run_resp)
+        runs.append(run_automation(auto.id, db))
     return runs
 
+# Run automations on demand (very simple stub)
+@router.post("/{automation_id}/run", response_model=AutomationRunOut)
+def run_automation(automation_id: int, db: Session = Depends(get_db)):
+    auto = db.get(models.Automation, automation_id)
+    if not auto or auto.user_id != DEFAULT_USER_ID:
+        raise HTTPException(status_code=404, detail="AUTOMATION_NOT_FOUND")
+    
     status_val = "success"
     message = "Executed stub action."
 
@@ -103,3 +122,4 @@ def run_all(db: Session = Depends(get_db)):
     )
     db.add(run); db.commit(); db.refresh(run)
     return run
+

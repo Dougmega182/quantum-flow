@@ -1,0 +1,46 @@
+name: CI
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: quantum
+          POSTGRES_PASSWORD: quantum123
+          POSTGRES_DB: quantum_flow
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd="pg_isready -U quantum" --health-interval=10s
+          --health-timeout=5s --health-retries=5
+    env:
+      DATABASE_URL: postgresql+psycopg2://quantum:quantum123@localhost:5432/quantum_flow
+      API_KEY: test-key
+      ALLOW_ORIGINS: http://localhost:5173
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Backend deps
+        run: |
+          cd backend
+          pip install --no-cache-dir -r requirements.txt
+
+      - name: Alembic upgrade
+        run: |
+          cd backend
+          alembic upgrade head
+
+      - name: Backend tests
+        run: |
+          cd backend
+          pytest
+
+      - name: Web build
+        run: |
+          cd web
+          npm ci
+          npm run build

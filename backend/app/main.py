@@ -4,20 +4,26 @@ from fastapi import FastAPI, Depends, Header, HTTPException, status, Request, Re
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes import intents, tasks, task_templates, recurrence, integrations, automations
 from app.routes import ai
+from fastapi import Request, Header, HTTPException
+from app.config import settings
+from app.routes import google_calendar
 
 API_KEY = os.getenv("API_KEY")
 ALLOW_ORIGINS = [o.strip() for o in os.getenv("ALLOW_ORIGINS", "*").split(",")]
 
-def require_api_key(x_api_key: str = Header(None)):
-    if API_KEY and x_api_key == API_KEY:
-        return True
-    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
+async def require_api_key(request: Request, x_api_key: str | None = Header(default=None)):
+    if request.method == "OPTIONS":
+        return
+    if not x_api_key or x_api_key != settings.API_KEY:
+        raise HTTPException(status_code=401, detail="Unauthorized")
 
 app = FastAPI(title="Quantum Flow Intent Service", version="0.1")
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOW_ORIGINS if ALLOW_ORIGINS != ["*"] else ["*"],
+    allow_origins=["http://localhost:5173", "http://localhost:8005"],  # add your dev hosts
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -53,3 +59,4 @@ app.include_router(recurrence.router, dependencies=[Depends(require_api_key)])
 app.include_router(integrations.router, dependencies=[Depends(require_api_key)])
 app.include_router(automations.router, dependencies=[Depends(require_api_key)])
 app.include_router(ai.router, dependencies=[Depends(require_api_key)])
+app.include_router(google_calendar.router, dependencies=[Depends(require_api_key)])
