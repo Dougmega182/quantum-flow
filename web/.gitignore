@@ -25,3 +25,32 @@ dist-ssr
 
 #env
 .env
+# Python
+__pycache__/
+*.pyc
+.venv/
+env/
+
+# Env
+.env
+
+# Docker
+pgdata/
+
+# IDE
+.idea/
+.vscode/
+.antigravity/
+
+# OS
+.DS_Store
+Thumbs.db
+**/__pycache__/
+**/*.pyc
+backup*.sql
+node_modules/
+dist/
+
+backend/.env.prod
+backend/.env
+
