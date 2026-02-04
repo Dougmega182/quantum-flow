@@ -26,3 +26,5 @@ dist/
 
 backend/.env.prod
 backend/.env
+backend/.env
+backend/.env.prod
