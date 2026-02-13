@@ -9,7 +9,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
-      - "5433:5432" # expose only if you need host access; otherwise remove
+      - "5434:5432" # expose only if you need host access; otherwise remove
 
   api:
     image: backend-api:latest
@@ -18,9 +18,10 @@ services:
     depends_on:
       - db
     env_file:
-      - ./backend/.env.prod
+      - backend\.env.prod
     environment:
       DATABASE_URL: postgresql+psycopg2://quantum:quantum123@db:5432/quantum_flow
+
     ports:
       - "8005:8000" # api exposed on host:8005
     command: [ "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000" ]

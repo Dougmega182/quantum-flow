@@ -16,7 +16,6 @@ SEED_INTENTS = [
 def main():
     engine = create_engine(DATABASE_URL, pool_pre_ping=True)
     SessionLocal = sessionmaker(bind=engine)
-    Base.metadata.create_all(engine)
     db = SessionLocal()
     try:
         # intents

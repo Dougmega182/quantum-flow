@@ -112,34 +112,94 @@ def pull(db: Session = Depends(get_db)):
     resp = requests.get(CAL_EVENTS, headers=headers, timeout=15, params={"maxResults": 10, "singleEvents": True, "orderBy": "startTime"})
     if resp.status_code != 200:
         raise HTTPException(status_code=400, detail=resp.text)
-    data = resp.json().get("items", [])
-    # TODO: map to tasks; for now, return fetched items
-    return {"fetched": len(data), "items": data}
+    items = resp.json().get("items", [])
+    
+    synced = 0
+    from datetime import datetime
+    for item in items:
+        ext_id = item.get("id")
+        # Check if already synced
+        exists = db.query(models.ExternalEvent).filter(
+            models.ExternalEvent.provider == "google_calendar",
+            models.ExternalEvent.external_id == ext_id
+        ).first()
+        if exists:
+            continue
+            
+        # Map to new task
+        start = item.get("start", {})
+        due_at_str = start.get("dateTime") or start.get("date")
+        due_at = None
+        if due_at_str:
+            try:
+                # Simple ISO parsing (Google uses ISO 8601)
+                due_at = datetime.fromisoformat(due_at_str.replace("Z", "+00:00"))
+            except:
+                pass
+                
+        new_task = models.Task(
+            user_id=DEFAULT_USER_ID,
+            title=item.get("summary", "Untitled Event"),
+            description=item.get("description"),
+            due_at=due_at,
+            status="open"
+        )
+        db.add(new_task)
+        db.flush() # Get task ID
+        
+        ext_event = models.ExternalEvent(
+            task_id=new_task.id,
+            provider="google_calendar",
+            external_id=ext_id,
+            last_synced_at=datetime.utcnow()
+        )
+        db.add(ext_event)
+        synced += 1
+    
+    db.commit()
+    return {"fetched": len(items), "synced": synced}
 
 @router.post("/push")
 def push(db: Session = Depends(get_db)):
-    # example: push open tasks with due_at and no external_id
     integ = get_integration(db)
     token = ensure_token(db, integ)
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    
+    # Get tasks that are NOT linked to Google already
+    subquery = db.query(models.ExternalEvent.task_id).filter(models.ExternalEvent.provider == "google_calendar")
     tasks = db.query(models.Task).filter(
         models.Task.user_id == DEFAULT_USER_ID,
         models.Task.deleted_at.is_(None),
         models.Task.due_at.isnot(None),
-        models.Task.status != "done"
+        models.Task.status != "done",
+        ~models.Task.id.in_(subquery)
     ).limit(10).all()
-    created = 0
+    
+    pushed = 0
+    from datetime import datetime
     for t in tasks:
+        # Google expects ISO strings
+        due_iso = t.due_at.isoformat() if t.due_at else None
+        if not due_iso: continue
+        
         body = {
             "summary": t.title,
             "description": t.description,
-            "start": {"dateTime": t.due_at},
-            "end": {"dateTime": t.due_at},
+            "start": {"dateTime": due_iso if "T" in due_iso else f"{due_iso}T09:00:00Z"},
+            "end": {"dateTime": due_iso if "T" in due_iso else f"{due_iso}T10:00:00Z"},
         }
         resp = requests.post(CAL_EVENTS, headers=headers, json=body, timeout=15)
         if resp.status_code == 200:
-            created += 1
+            ext_id = resp.json().get("id")
+            ext_event = models.ExternalEvent(
+                task_id=t.id,
+                provider="google_calendar",
+                external_id=ext_id,
+                last_synced_at=datetime.utcnow()
+            )
+            db.add(ext_event)
+            pushed += 1
         else:
-            # soft-fail
             continue
-    return {"pushed": created}
+    db.commit()
+    return {"pushed": pushed}

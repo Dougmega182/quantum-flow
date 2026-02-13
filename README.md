@@ -269,11 +269,13 @@ web:
     - "8080:80"
   depends_on:
     - api
-```
 
----
+## Prod Quickstart
+# ensure backend/.env.prod has real secrets (not in git)
+docker compose -f docker-compose.prod.yml up -d --build
+docker exec -it quantumflow-api-1 alembic upgrade head
+docker exec -it quantumflow-api-1 python /code/seed_intents.py
 
-## Tips
-- Resolve DB port conflicts by mapping to a free host port (e.g., `5434:5432`) if 5432/5433 are in use.
-- Run alembic/seed only after DB is healthy.
-- Keep `.env` files out of git; rotate API_KEY for prod and update clients accordingly.
+Health:
+curl -H "X-API-Key: <key>" http://localhost:8005/health      # API direct
+curl http://localhost:8080/health                            # via nginx
