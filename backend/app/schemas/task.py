@@ -6,7 +6,8 @@ class TaskBase(BaseModel):
     title: constr(strip_whitespace=True, min_length=1, max_length=255)
     description: Optional[str] = None
     intent_id: Optional[int] = None
-    priority: Optional[str] = None
+    labels: Optional[str] = None
+    tags: Optional[str] = None
     due_at: Optional[datetime] = None
 
 class TaskCreate(TaskBase):
@@ -17,6 +18,8 @@ class TaskUpdate(BaseModel):
     description: Optional[str] = None
     intent_id: Optional[int] = None
     priority: Optional[str] = None
+    labels: Optional[str] = None
+    tags: Optional[str] = None
     due_at: Optional[datetime] = None
     status: Optional[str] = None  # open, in_progress, done
 
@@ -28,6 +31,8 @@ class TaskOut(BaseModel):
     description: str | None
     status: str
     priority: str | None
+    labels: str | None
+    tags: str | None
     due_at: datetime | None
     created_at: datetime
     updated_at: datetime

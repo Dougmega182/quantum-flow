@@ -90,7 +90,7 @@ export function AutomationsPage() {
     }
 
     return (
-        <div style={{ maxWidth: 860, margin: "24px auto" }}>
+        <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <h2>Automations</h2>
                 <button

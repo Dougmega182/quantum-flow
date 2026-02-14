@@ -71,7 +71,7 @@ export function RecurrencePage() {
     }
 
     return (
-        <div style={{ maxWidth: 860, margin: "24px auto" }}>
+        <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <h2>Recurrence Rules</h2>
                 <button onClick={handleMaterialize} style={{ background: "#2ecc71", color: "white" }}>Run Materialize Now</button>

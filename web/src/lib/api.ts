@@ -39,6 +39,8 @@ export type Task = {
     description: string | null;
     status: "open" | "in_progress" | "done";
     priority: string | null;
+    labels: string | null;
+    tags: string | null;
     due_at: string | null;
     created_at: string;
     updated_at: string;
@@ -81,8 +83,10 @@ export const api = {
         const q = qs.toString();
         return request<TaskList>(`/v1/tasks${q ? `?${q}` : ""}`);
     },
-    taskCreate: (body: { title: string; description?: string; due_at?: string | null; priority?: string | null }) =>
+    taskCreate: (body: { title: string; description?: string; due_at?: string | null; priority?: string | null; labels?: string; tags?: string }) =>
         request<Task>(`/v1/tasks`, { method: "POST", body: JSON.stringify(body) }),
+    taskUpdate: (id: number, body: Partial<{ title: string; description: string; due_at: string; priority: string; labels: string; tags: string; status: string }>) =>
+        request<Task>(`/v1/tasks/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
     taskComplete: (id: number) => request<Task>(`/v1/tasks/${id}/complete`, { method: "POST" }),
     taskReopen: (id: number) => request<Task>(`/v1/tasks/${id}/reopen`, { method: "POST" }),
     taskDelete: (id: number) => request<{ status: string }>(`/v1/tasks/${id}`, { method: "DELETE" }),

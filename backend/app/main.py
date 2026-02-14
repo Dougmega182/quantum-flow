@@ -11,11 +11,7 @@ from app.routes import google_calendar
 API_KEY = os.getenv("API_KEY")
 ALLOW_ORIGINS = [o.strip() for o in os.getenv("ALLOW_ORIGINS", "*").split(",")]
 
-async def require_api_key(request: Request, x_api_key: str | None = Header(default=None)):
-    if request.method == "OPTIONS":
-        return
-    if not x_api_key or x_api_key != settings.API_KEY:
-        raise HTTPException(status_code=401, detail="Unauthorized")
+from app.auth import require_api_key
 
 app = FastAPI(title="Quantum Flow Intent Service", version="0.1")
 
@@ -51,7 +47,10 @@ def metrics():
         media_type="text/plain"
     )
 
-# Apply API key to all intent routes
+# Public / Selective routes first
+app.include_router(google_calendar.router)
+
+# Protected routes
 app.include_router(intents.router, dependencies=[Depends(require_api_key)])
 app.include_router(tasks.router, dependencies=[Depends(require_api_key)])
 app.include_router(task_templates.router, dependencies=[Depends(require_api_key)])
@@ -59,4 +58,3 @@ app.include_router(recurrence.router, dependencies=[Depends(require_api_key)])
 app.include_router(integrations.router, dependencies=[Depends(require_api_key)])
 app.include_router(automations.router, dependencies=[Depends(require_api_key)])
 app.include_router(ai.router, dependencies=[Depends(require_api_key)])
-app.include_router(google_calendar.router, dependencies=[Depends(require_api_key)])

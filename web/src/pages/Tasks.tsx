@@ -5,111 +5,179 @@ import { Toast } from "../components/Toast";
 import { useToasts } from "../hooks/useToasts";
 
 const STATUS_FILTERS = ["", "open", "in_progress", "done", "all"] as const;
-
 const LS_KEY = "qf_tasks_filters";
 
-export function TasksPage() {
+interface TasksPageProps {
+    view?: "" | "today" | "overdue" | "upcoming" | "all" | "someday";
+    onTaskSelect?: (task: Task) => void;
+}
+
+export function TasksPage({ view: initialView, onTaskSelect }: TasksPageProps) {
     const saved = (() => {
         try { return JSON.parse(localStorage.getItem(LS_KEY) || "{}"); } catch { return {}; }
     })();
-    const [items, setItems] = useState<Task[]>([]);
-    const [view, setView] = useState<"" | "today" | "overdue" | "upcoming">(saved.view ?? "today");
+
+    const [view, setView] = useState<any>(initialView || saved.view || "today");
     const [statusFilter, setStatusFilter] = useState<(typeof STATUS_FILTERS)[number]>(saved.statusFilter ?? "");
     const [sort, setSort] = useState<"due_at_asc" | "due_at_desc">(saved.sort ?? "due_at_asc");
+    const [items, setItems] = useState<Task[]>([]);
     const [title, setTitle] = useState("");
     const [dueAt, setDueAt] = useState<string>("");
     const [err, setErr] = useState<string | null>(null);
     const { toasts, push, dismiss } = useToasts();
+    const [selectedId, setSelectedId] = useState<number | null>(null);
+
+    useEffect(() => {
+        if (initialView !== undefined) setView(initialView === "all" ? "" : initialView);
+    }, [initialView]);
 
     async function refresh() {
         setErr(null);
         const params: Record<string, string> = {};
         if (view) params.view = view;
-        if (statusFilter !== "all") params.status = statusFilter;
-        const res = await api.tasksList(params);
-        let list = res.items;
-        if (sort === "due_at_asc" || sort === "due_at_desc") {
-            list = [...list].sort((a, b) => {
-                const ad = a.due_at ? Date.parse(a.due_at) : Infinity;
-                const bd = b.due_at ? Date.parse(b.due_at) : Infinity;
-                return sort === "due_at_asc" ? ad - bd : bd - ad;
-            });
+        if (statusFilter && statusFilter !== "all") params.status = statusFilter;
+        try {
+            const res = await api.tasksList(params);
+            let list = res.items;
+            if (sort === "due_at_asc" || sort === "due_at_desc") {
+                list = [...list].sort((a, b) => {
+                    const ad = a.due_at ? Date.parse(a.due_at) : Infinity;
+                    const bd = b.due_at ? Date.parse(b.due_at) : Infinity;
+                    return sort === "due_at_asc" ? ad - bd : bd - ad;
+                });
+            }
+            setItems(list);
+            localStorage.setItem(LS_KEY, JSON.stringify({ view, statusFilter, sort }));
+        } catch (e) {
+            setErr(String(e));
         }
-        setItems(list);
-        localStorage.setItem(LS_KEY, JSON.stringify({ view, statusFilter, sort }));
     }
 
     useEffect(() => {
-        refresh().catch((e) => setErr(String(e)));
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        refresh();
     }, [view, statusFilter, sort]);
 
     return (
-        <div style={{ maxWidth: 860, margin: "24px auto" }}>
-            <h2>Tasks</h2>
-            <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
-                <select value={view} onChange={(e) => setView(e.target.value as any)}>
-                    <option value="today">Today</option>
-                    <option value="overdue">Overdue</option>
-                    <option value="upcoming">Upcoming</option>
-                    <option value="">All</option>
-                </select>
-                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)}>
-                    <option value="">Any status</option>
-                    <option value="open">Open</option>
-                    <option value="in_progress">In progress</option>
-                    <option value="done">Done</option>
-                </select>
-                <select value={sort} onChange={(e) => setSort(e.target.value as any)}>
-                    <option value="due_at_asc">Due date ↑</option>
-                    <option value="due_at_desc">Due date ↓</option>
-                </select>
+        <div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+                <h2 style={{ fontSize: 28, textTransform: "capitalize", fontWeight: 800 }}>{view || "Inbox"}</h2>
+                <div style={{ display: "flex", gap: 12 }}>
+                    <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)} style={{ border: "none", backgroundColor: "transparent", opacity: 0.5, fontWeight: 600 }}>
+                        <option value="">Any status</option>
+                        <option value="open">Open</option>
+                        <option value="in_progress">In progress</option>
+                        <option value="done">Done</option>
+                    </select>
+                    <select value={sort} onChange={(e) => setSort(e.target.value as any)} style={{ border: "none", backgroundColor: "transparent", opacity: 0.5, fontWeight: 600 }}>
+                        <option value="due_at_asc">Due date ↑</option>
+                        <option value="due_at_desc">Due date ↓</option>
+                    </select>
+                </div>
             </div>
 
-            <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-                <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="New task title" style={{ flex: 1 }} />
-                <input type="date" value={dueAt} onChange={(e) => setDueAt(e.target.value)} />
-                <button
-                    onClick={async () => {
-                        setErr(null);
-                        await api.taskCreate({ title, due_at: dueAt || undefined });
-                        setTitle("");
-                        setDueAt("");
-                        push("Task created", "ok");
-                        await refresh();
+            <div style={{
+                display: "flex",
+                gap: 12,
+                marginBottom: 32,
+                backgroundColor: "#fff",
+                padding: "20px",
+                borderRadius: "16px",
+                border: "1px solid var(--border-color)",
+                boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)"
+            }}>
+                <input
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Capture an idea..."
+                    style={{ flex: 1, border: "none", fontSize: 18, outline: "none" }}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter" && title.trim()) {
+                            (async () => {
+                                await api.taskCreate({ title, due_at: dueAt || undefined });
+                                setTitle("");
+                                push("Captured", "ok");
+                                await refresh();
+                            })();
+                        }
                     }}
-                    disabled={!title.trim()}
-                >
-                    Add
-                </button>
+                />
+                <input type="date" value={dueAt} onChange={(e) => setDueAt(e.target.value)} style={{ border: "none", opacity: 0.3, cursor: "pointer", fontSize: 14 }} />
             </div>
 
-            {err && <pre style={{ color: "crimson", whiteSpace: "pre-wrap" }}>{err}</pre>}
+            {err && <div style={{ color: "crimson", padding: 12 }}>{err}</div>}
 
-            <ul style={{ listStyle: "none", padding: 0 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 {items.map((t) => (
-                    <li key={t.id} style={{ padding: 12, border: "1px solid #eee", marginBottom: 8 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                    <div
+                        key={t.id}
+                        onClick={() => {
+                            setSelectedId(t.id);
+                            onTaskSelect?.(t);
+                        }}
+                        style={{
+                            padding: "12px 16px",
+                            backgroundColor: selectedId === t.id ? "var(--brand-light)" : "transparent",
+                            borderRadius: "10px",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 16,
+                            cursor: "pointer",
+                            transition: "all 0.15s ease",
+                        }}
+                    >
+                        <input
+                            type="checkbox"
+                            checked={t.status === "done"}
+                            onChange={async (e) => {
+                                e.stopPropagation();
+                                if (t.status !== "done") await api.taskComplete(t.id);
+                                else await api.taskReopen(t.id);
+                                push(t.status === "done" ? "Reopened" : "Completed", "ok");
+                                await refresh();
+                            }}
+                            style={{
+                                width: 22,
+                                height: 22,
+                                cursor: "pointer",
+                                accentColor: "var(--brand-color)",
+                                flexShrink: 0
+                            }}
+                        />
+                        <div style={{ flex: 1, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                             <div>
-                                <strong>{t.title}</strong>
-                                <div style={{ fontSize: 12, opacity: 0.7 }}>
-                                    status={t.status} due={t.due_at ?? "-"} priority={t.priority ?? "-"}
+                                <div style={{
+                                    fontWeight: 500,
+                                    fontSize: 15,
+                                    textDecoration: t.status === "done" ? "line-through" : "none",
+                                    opacity: t.status === "done" ? 0.4 : 1,
+                                    color: selectedId === t.id ? "var(--brand-color)" : "inherit"
+                                }}>
+                                    {t.title}
                                 </div>
-                            </div>
-                            <div style={{ display: "flex", gap: 8 }}>
-                                {t.status !== "done" ? (
-                                    <button onClick={async () => { await api.taskComplete(t.id); push("Completed", "ok"); await refresh(); }}>Complete</button>
-                                ) : (
-                                    <button onClick={async () => { await api.taskReopen(t.id); push("Reopened", "ok"); await refresh(); }}>Reopen</button>
+                                {t.labels && (
+                                    <div style={{ display: "flex", gap: 4, marginTop: 4 }}>
+                                        {t.labels.split(",").map(l => (
+                                            <span key={l} style={{ fontSize: 10, padding: "2px 6px", backgroundColor: "#f3f4f6", borderRadius: 4, opacity: 0.7 }}>{l.trim()}</span>
+                                        ))}
+                                    </div>
                                 )}
-                                <button onClick={async () => { await api.taskDelete(t.id); push("Deleted", "ok"); await refresh(); }}>Delete</button>
                             </div>
+                            {t.due_at && (
+                                <div style={{
+                                    fontSize: 12,
+                                    opacity: 0.5,
+                                    color: new Date(t.due_at) < new Date() && t.status !== "done" ? "var(--status-overdue)" : "inherit",
+                                    fontWeight: new Date(t.due_at) < new Date() && t.status !== "done" ? 700 : 400
+                                }}>
+                                    {new Date(t.due_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                                </div>
+                            )}
                         </div>
-                    </li>
+                    </div>
                 ))}
-            </ul>
+            </div>
 
-            <div style={{ position: "fixed", right: 16, bottom: 16, width: 240 }}>
+            <div style={{ position: "fixed", right: 16, bottom: 16, width: 240, zIndex: 100 }}>
                 {toasts.map((t: { id: number; text: string; tone?: "ok" | "err" }) => (
                     <Toast key={t.id} msg={t} onDone={dismiss} />
                 ))}

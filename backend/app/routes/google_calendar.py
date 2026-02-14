@@ -4,6 +4,7 @@ import requests, time
 from app.db import SessionLocal
 from app import models
 from app.config import settings
+from app.auth import require_api_key
 
 router = APIRouter(prefix="/v1/integrations/google", tags=["integrations"])
 
@@ -69,7 +70,7 @@ def ensure_token(db: Session, integ):
     save_tokens(db, integ, data)
     return data["access_token"]
 
-@router.get("/auth-url")
+@router.get("/auth-url", dependencies=[Depends(require_api_key)])
 def auth_url():
     params = {
         "client_id": settings.GOOGLE_CLIENT_ID,
@@ -97,14 +98,16 @@ def callback(code: str = Query(...), db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail=resp.text)
     data = resp.json()
     save_tokens(db, integ, data)
-    return {"status": "connected"}
+    # Redirect back to the frontend to avoid showing JSON to the user
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="http://localhost:5173/integrations")
 
-@router.get("/status")
+@router.get("/status", dependencies=[Depends(require_api_key)])
 def status(db: Session = Depends(get_db)):
     integ = get_integration(db)
     return {"status": integ.status, "has_token": bool((integ.config_json or {}).get("access_token"))}
 
-@router.post("/pull")
+@router.post("/pull", dependencies=[Depends(require_api_key)])
 def pull(db: Session = Depends(get_db)):
     integ = get_integration(db)
     token = ensure_token(db, integ)
@@ -159,7 +162,7 @@ def pull(db: Session = Depends(get_db)):
     db.commit()
     return {"fetched": len(items), "synced": synced}
 
-@router.post("/push")
+@router.post("/push", dependencies=[Depends(require_api_key)])
 def push(db: Session = Depends(get_db)):
     integ = get_integration(db)
     token = ensure_token(db, integ)

@@ -58,7 +58,7 @@ export function IntegrationsPage() {
     }
 
     return (
-        <div style={{ maxWidth: 860, margin: "24px auto" }}>
+        <div>
             <h2>Integrations</h2>
 
             <div style={{ border: "1px solid #eee", padding: 20, borderRadius: 8, background: "white" }}>
