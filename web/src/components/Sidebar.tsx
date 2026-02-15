@@ -9,20 +9,19 @@ export function Sidebar({ activeTab, setTab }: SidebarProps) {
     const navItems = [
         { id: "tasks", label: "Inbox", icon: "📥" },
         { id: "today", label: "Today", icon: "☀️" },
-        { id: "someday", label: "Someday", icon: "🗓️" },
         { id: "all", label: "All Tasks", icon: "📋" },
+    ];
+
+    const projectItems = [
+        { id: "list:Work", label: "Work", icon: "💼" },
+        { id: "list:Home", label: "Home", icon: "🏠" },
+        { id: "list:Projects", label: "Projects", icon: "🚀" },
     ];
 
     const secondaryItems = [
         { id: "integrations", label: "Integrations", icon: "🔌" },
         { id: "automations", label: "Automations", icon: "⚡" },
         { id: "ai", label: "AI Suggestions", icon: "✨" },
-    ];
-
-    const labels = [
-        { label: "Personal", color: "#3699ff" },
-        { label: "Work", color: "#1bc5bd" },
-        { label: "Urgent", color: "#f64e60" },
     ];
 
     return (
@@ -63,9 +62,12 @@ export function Sidebar({ activeTab, setTab }: SidebarProps) {
                         </div>
                     ))}
 
-                    <div style={{ height: 24 }} />
+                    <div style={{ height: 16 }} />
 
-                    {secondaryItems.map(item => (
+                    <div style={{ padding: "0 12px", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", opacity: 0.5, marginBottom: 8 }}>
+                        Lists
+                    </div>
+                    {projectItems.map(item => (
                         <div
                             key={item.id}
                             onClick={() => setTab(item.id)}
@@ -86,26 +88,29 @@ export function Sidebar({ activeTab, setTab }: SidebarProps) {
                         </div>
                     ))}
 
-                    <div style={{ height: 32 }} />
+                    <div style={{ height: 24 }} />
 
                     <div style={{ padding: "0 12px", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", opacity: 0.5, marginBottom: 8 }}>
-                        Labels
+                        Settings
                     </div>
-                    {labels.map(l => (
+                    {secondaryItems.map(item => (
                         <div
-                            key={l.label}
+                            key={item.id}
+                            onClick={() => setTab(item.id)}
                             style={{
-                                padding: "6px 12px",
+                                padding: "8px 12px",
                                 borderRadius: 6,
                                 cursor: "pointer",
                                 display: "flex",
                                 alignItems: "center",
                                 gap: 12,
                                 marginBottom: 2,
+                                backgroundColor: activeTab === item.id ? "var(--sidebar-hover)" : "transparent",
+                                color: activeTab === item.id ? "var(--sidebar-text-active)" : "inherit",
                             }}
                         >
-                            <div style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: l.color }} />
-                            <span style={{ fontSize: 14 }}>{l.label}</span>
+                            <span>{item.icon}</span>
+                            <span style={{ fontSize: 14 }}>{item.label}</span>
                         </div>
                     ))}
                 </nav>

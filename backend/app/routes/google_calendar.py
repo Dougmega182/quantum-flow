@@ -6,7 +6,7 @@ from app import models
 from app.config import settings
 from app.auth import require_api_key
 
-router = APIRouter(prefix="/v1/integrations/google", tags=["integrations"])
+router = APIRouter(prefix="/v1/google-calendar", tags=["google-calendar"])
 
 DEFAULT_USER_ID = 1
 TOKEN_URL = "https://oauth2.googleapis.com/token"

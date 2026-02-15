@@ -12,6 +12,8 @@ class Task(Base):
     status = Column(String(32), nullable=False, server_default="open")
     priority = Column(String(16), nullable=True)
     due_at = Column(DateTime(timezone=True), nullable=True)
+    duration_minutes = Column(Integer, nullable=True)
+    parent_id = Column(Integer, ForeignKey("tasks.id", ondelete="CASCADE"), nullable=True, index=True)
     labels = Column(Text, nullable=True) # comma-separated
     tags = Column(Text, nullable=True)   # comma-separated
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

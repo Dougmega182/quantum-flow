@@ -3,9 +3,9 @@ from app.config import settings
 
 async def require_api_key(request: Request, x_api_key: str | None = Header(default=None)):
     path = request.url.path
-    if "callback" in path and "google" in path:
-        # LOGGING FOR DEBUGGING
-        print(f"AUTH_BYPASS_GRANTED: path={path}", flush=True)
+    
+    # Bypass for health check and google-calendar callback
+    if "/health" in path or "/v1/google-calendar/callback" in path.lower():
         return
 
     expected = settings.API_KEY

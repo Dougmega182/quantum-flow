@@ -14,14 +14,20 @@ export function Dashboard() {
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
     const renderContent = (onTaskClick: (t: Task) => void) => {
+        if (activeTab.startsWith("list:")) {
+            const label = activeTab.split(":")[1];
+            return <TasksPage view="" label={label} onTaskSelect={onTaskClick} />;
+        }
+
         switch (activeTab) {
             case "tasks":
+                return <TasksPage view="inbox" onTaskSelect={onTaskClick} />;
             case "today":
-            case "someday":
-            case "all":
             case "overdue":
             case "upcoming":
-                return <TasksPage view={activeTab === "tasks" ? "" : activeTab} onTaskSelect={onTaskClick} />;
+            case "all":
+            case "someday":
+                return <TasksPage view={activeTab === "all" ? "" : activeTab} onTaskSelect={onTaskClick} />;
             case "templates": return <TemplatesPage />;
             case "recurrence": return <RecurrencePage />;
             case "integrations": return <IntegrationsPage />;

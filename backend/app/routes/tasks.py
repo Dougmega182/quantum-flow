@@ -29,7 +29,8 @@ def list_tasks(
     priority: Optional[str] = Query(None),
     due_before: Optional[datetime] = Query(None),
     due_after: Optional[datetime] = Query(None),
-    view: Optional[str] = Query(None, description="today|overdue|upcoming"),
+    view: Optional[str] = Query(None, description="today|overdue|upcoming|inbox"),
+    label: Optional[str] = Query(None),
     q: Optional[str] = Query(None),
     limit: int = 50,
     offset: int = 0,
@@ -46,6 +47,9 @@ def list_tasks(
             raise HTTPException(status_code=422, detail="INVALID_STATUS")
         query = query.filter(models.Task.status == status)
 
+    if label:
+        query = query.filter(models.Task.labels.ilike(f"%{label}%"))
+
     if intent_id:
         query = query.filter(models.Task.intent_id == intent_id)
 
@@ -61,6 +65,12 @@ def list_tasks(
         query = query.filter(models.Task.due_at < now, models.Task.status != "done")
     elif view == "upcoming":
         query = query.filter(models.Task.due_at >= now)
+    elif view == "inbox":
+        # Inbox is tasks with no lables and no due date
+        query = query.filter(
+            (models.Task.labels == None) | (models.Task.labels == ""),
+            models.Task.due_at == None
+        )
 
     if due_before:
         query = query.filter(models.Task.due_at <= due_before)

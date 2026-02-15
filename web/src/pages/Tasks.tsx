@@ -8,11 +8,12 @@ const STATUS_FILTERS = ["", "open", "in_progress", "done", "all"] as const;
 const LS_KEY = "qf_tasks_filters";
 
 interface TasksPageProps {
-    view?: "" | "today" | "overdue" | "upcoming" | "all" | "someday";
+    view?: "" | "today" | "overdue" | "upcoming" | "all" | "someday" | "inbox";
+    label?: string;
     onTaskSelect?: (task: Task) => void;
 }
 
-export function TasksPage({ view: initialView, onTaskSelect }: TasksPageProps) {
+export function TasksPage({ view: initialView, label, onTaskSelect }: TasksPageProps) {
     const saved = (() => {
         try { return JSON.parse(localStorage.getItem(LS_KEY) || "{}"); } catch { return {}; }
     })();
@@ -35,6 +36,7 @@ export function TasksPage({ view: initialView, onTaskSelect }: TasksPageProps) {
         setErr(null);
         const params: Record<string, string> = {};
         if (view) params.view = view;
+        if (label) params.label = label;
         if (statusFilter && statusFilter !== "all") params.status = statusFilter;
         try {
             const res = await api.tasksList(params);
@@ -60,7 +62,7 @@ export function TasksPage({ view: initialView, onTaskSelect }: TasksPageProps) {
     return (
         <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-                <h2 style={{ fontSize: 28, textTransform: "capitalize", fontWeight: 800 }}>{view || "Inbox"}</h2>
+                <h2 style={{ fontSize: 28, textTransform: "capitalize", fontWeight: 800 }}>{label || view || "Inbox"}</h2>
                 <div style={{ display: "flex", gap: 12 }}>
                     <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)} style={{ border: "none", backgroundColor: "transparent", opacity: 0.5, fontWeight: 600 }}>
                         <option value="">Any status</option>
@@ -93,7 +95,11 @@ export function TasksPage({ view: initialView, onTaskSelect }: TasksPageProps) {
                     onKeyDown={(e) => {
                         if (e.key === "Enter" && title.trim()) {
                             (async () => {
-                                await api.taskCreate({ title, due_at: dueAt || undefined });
+                                await api.taskCreate({
+                                    title,
+                                    due_at: dueAt || undefined,
+                                    labels: label || undefined
+                                });
                                 setTitle("");
                                 push("Captured", "ok");
                                 await refresh();

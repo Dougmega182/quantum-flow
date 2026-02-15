@@ -107,10 +107,10 @@ export const api = {
     recurrenceMaterialize: () => request<{ created: number }>(`/v1/recurrence/materialize`, { method: "POST" }),
 
     // Integrations
-    googleAuthUrl: () => request<{ url: string }>(`/v1/integrations/google/auth-url`),
-    googleStatus: () => request<{ status: string; has_token: boolean }>(`/v1/integrations/google/status`),
-    googlePull: () => request<{ fetched: number; synced: number }>(`/v1/integrations/google/pull`, { method: "POST" }),
-    googlePush: () => request<{ pushed: number }>(`/v1/integrations/google/push`, { method: "POST" }),
+    googleAuthUrl: () => request<{ url: string }>(`/v1/google-calendar/auth-url`),
+    googleStatus: () => request<{ status: string; has_token: boolean }>(`/v1/google-calendar/status`),
+    googlePull: () => request<{ fetched: number; synced: number }>(`/v1/google-calendar/pull`, { method: "POST" }),
+    googlePush: () => request<{ pushed: number }>(`/v1/google-calendar/push`, { method: "POST" }),
 
     // Automations
     automationList: () => request<Automation[]>(`/v1/automations`),
