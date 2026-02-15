@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app import models
 from app.db import SessionLocal
 from app.schemas.task import TaskCreate, TaskUpdate, TaskOut, TaskList
+from app.utils.nlp import parse_task_nlp
 
 router = APIRouter(prefix="/v1/tasks", tags=["tasks"])
 
@@ -111,6 +112,13 @@ def get_task(task_id: int, db: Session = Depends(get_db)):
 @router.post("", response_model=TaskOut, status_code=201)
 def create_task(payload: TaskCreate, db: Session = Depends(get_db)):
     data = payload.model_dump()
+    
+    # NLP Parsing
+    title, due_at = parse_task_nlp(data["title"])
+    data["title"] = title
+    if due_at and not data.get("due_at"):
+        data["due_at"] = due_at
+
     status_val = data.get("status", "open")
     if status_val not in ALLOWED_STATUS:
         raise HTTPException(status_code=422, detail="INVALID_STATUS")

@@ -7,11 +7,32 @@ import { SuggestionsPage } from "./Suggestions";
 import { TemplatesPage } from "./Templates";
 import { RecurrencePage } from "./Recurrence";
 import { TaskEditor } from "../components/TaskEditor";
+import { CommandBar } from "../components/CommandBar";
 import type { Task } from "../lib/api";
+import { useEffect } from "react";
 
 export function Dashboard() {
     const [activeTab, setTab] = useState<any>("today");
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+    const [showCommandBar, setShowCommandBar] = useState(false);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.ctrlKey && e.key === "k") {
+                e.preventDefault();
+                setShowCommandBar(true);
+            }
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, []);
+
+    const handleCommand = (action: string) => {
+        setShowCommandBar(false);
+        if (action === "today") setTab("today");
+        if (action === "inbox") setTab("tasks");
+        // Add more actions as needed
+    };
 
     const renderContent = (onTaskClick: (t: Task) => void) => {
         if (activeTab.startsWith("list:")) {
@@ -39,6 +60,7 @@ export function Dashboard() {
 
     return (
         <div style={{ display: "flex", width: "100%", height: "100vh" }}>
+            {showCommandBar && <CommandBar onClose={() => setShowCommandBar(false)} onAction={handleCommand} />}
             {/* Column 1: Side Navigation */}
             <Sidebar activeTab={activeTab} setTab={setTab} />
 

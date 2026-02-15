@@ -42,6 +42,8 @@ export type Task = {
     labels: string | null;
     tags: string | null;
     due_at: string | null;
+    duration_minutes: number | null;
+    parent_id: number | null;
     created_at: string;
     updated_at: string;
     completed_at: string | null;
@@ -83,9 +85,9 @@ export const api = {
         const q = qs.toString();
         return request<TaskList>(`/v1/tasks${q ? `?${q}` : ""}`);
     },
-    taskCreate: (body: { title: string; description?: string; due_at?: string | null; priority?: string | null; labels?: string; tags?: string }) =>
+    taskCreate: (body: { title: string; description?: string; due_at?: string | null; priority?: string | null; labels?: string; tags?: string; duration_minutes?: number; parent_id?: number }) =>
         request<Task>(`/v1/tasks`, { method: "POST", body: JSON.stringify(body) }),
-    taskUpdate: (id: number, body: Partial<{ title: string; description: string; due_at: string; priority: string; labels: string; tags: string; status: string }>) =>
+    taskUpdate: (id: number, body: Partial<{ title: string; description: string; due_at: string; priority: string; labels: string; tags: string; status: string; duration_minutes: number; parent_id: number }>) =>
         request<Task>(`/v1/tasks/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
     taskComplete: (id: number) => request<Task>(`/v1/tasks/${id}/complete`, { method: "POST" }),
     taskReopen: (id: number) => request<Task>(`/v1/tasks/${id}/reopen`, { method: "POST" }),

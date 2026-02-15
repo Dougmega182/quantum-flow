@@ -1,49 +1,39 @@
-import { useState, useEffect, useRef } from "react";
-import { api } from "../lib/api";
+import { useState, useEffect } from "react";
 
-export function CommandBar() {
-    const [open, setOpen] = useState(false);
+interface CommandBarProps {
+    onClose: () => void;
+    onAction: (action: string, payload?: any) => void;
+}
+
+export function CommandBar({ onClose, onAction }: CommandBarProps) {
     const [query, setQuery] = useState("");
-    const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            // Cmd+K or Ctrl+K to open
-            if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-                e.preventDefault();
-                setOpen(prev => !prev);
-            }
-            if (e.key === "Escape") {
-                setOpen(false);
-            }
+        const handleDown = (e: KeyboardEvent) => {
+            if (e.key === "Escape") onClose();
         };
-        window.addEventListener("keydown", handleKeyDown);
-        return () => window.removeEventListener("keydown", handleKeyDown);
-    }, []);
+        window.addEventListener("keydown", handleDown);
+        return () => window.removeEventListener("keydown", handleDown);
+    }, [onClose]);
 
-    useEffect(() => {
-        if (open) {
-            inputRef.current?.focus();
-        } else {
-            setQuery("");
-        }
-    }, [open]);
-
-    if (!open) return null;
+    const suggestions = [
+        { id: "capture", icon: "➕", label: "Capture Task", shortcut: "C" },
+        { id: "search", icon: "🔍", label: "Search Tasks", shortcut: "S" },
+        { id: "today", icon: "☀️", label: "Go to Today", shortcut: "G T" },
+        { id: "inbox", icon: "📥", label: "Go to Inbox", shortcut: "G I" },
+    ].filter(s => s.label.toLowerCase().includes(query.toLowerCase()));
 
     return (
         <div style={{
             position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            backgroundColor: "rgba(0,0,0,0.5)",
-            zIndex: 1000,
+            top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.4)",
             display: "flex",
             justifyContent: "center",
-            paddingTop: "15vh"
-        }} onClick={() => setOpen(false)}>
+            paddingTop: "15vh",
+            zIndex: 1000,
+            backdropFilter: "blur(4px)"
+        }} onClick={onClose}>
             <div
                 style={{
                     width: 600,
@@ -57,51 +47,55 @@ export function CommandBar() {
                 }}
                 onClick={e => e.stopPropagation()}
             >
-                <div style={{ padding: 16, borderBottom: "1px solid #eee", display: "flex", alignItems: "center", gap: 12 }}>
-                    <span style={{ fontSize: 20 }}>🌌</span>
+                <div style={{ padding: "16px 20px", borderBottom: "1px solid #eee", display: "flex", alignItems: "center", gap: 12 }}>
+                    <span style={{ fontSize: 20 }}>🔍</span>
                     <input
-                        ref={inputRef}
+                        autoFocus
                         value={query}
                         onChange={e => setQuery(e.target.value)}
-                        placeholder="Search or capture: 'Buy milk tomorrow'..."
+                        placeholder="Type a command or search..."
                         style={{
                             flex: 1,
                             border: "none",
-                            fontSize: 18,
                             outline: "none",
-                            background: "none"
-                        }}
-                        onKeyDown={async (e) => {
-                            if (e.key === "Enter" && query.trim()) {
-                                // Quick add task
-                                await api.taskCreate({ title: query });
-                                setOpen(false);
-                                // We'd ideally need a global refresh trigger here
-                            }
+                            fontSize: 16,
+                            color: "#1a1a1a"
                         }}
                     />
-                    <div style={{ fontSize: 12, opacity: 0.5 }}>ESC to close</div>
+                    <div style={{ fontSize: 11, fontWeight: 700, opacity: 0.3, border: "1px solid #ddd", padding: "2px 4px", borderRadius: 4 }}>ESC</div>
                 </div>
 
-                <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 4 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, opacity: 0.4, padding: "0 8px", marginBottom: 4 }}>ACTIONS</div>
-                    <div className="cmd-item">🚀 Launch Ritual</div>
-                    <div className="cmd-item">📅 Schedule Meeting</div>
-                    <div className="cmd-item">⚡ New Automation</div>
+                <div style={{ padding: 8, overflowY: "auto" }}>
+                    {suggestions.map((s, idx) => (
+                        <div
+                            key={s.id}
+                            onClick={() => onAction(s.id)}
+                            style={{
+                                padding: "10px 12px",
+                                borderRadius: 8,
+                                cursor: "pointer",
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                backgroundColor: idx === 0 ? "#f8f9fa" : "transparent"
+                            }}
+                        >
+                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                <span>{s.icon}</span>
+                                <span style={{ fontSize: 14 }}>{s.label}</span>
+                            </div>
+                            {s.shortcut && (
+                                <span style={{ fontSize: 11, color: "#999", fontWeight: 600 }}>{s.shortcut}</span>
+                            )}
+                        </div>
+                    ))}
+                    {suggestions.length === 0 && (
+                        <div style={{ padding: 24, textAlign: "center", opacity: 0.5, fontSize: 14 }}>
+                            No commands found for "{query}"
+                        </div>
+                    )}
                 </div>
             </div>
-
-            <style>{`
-        .cmd-item {
-          padding: 10px 16px;
-          border-radius: 8px;
-          cursor: pointer;
-          font-size: 14px;
-        }
-        .cmd-item:hover {
-          background-color: #f3f4f6;
-        }
-      `}</style>
         </div>
     );
 }
