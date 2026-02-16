@@ -14,7 +14,8 @@ AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 CAL_EVENTS = "https://www.googleapis.com/calendar/v3/calendars/primary/events"
 
 SCOPES = [
-    "https://www.googleapis.com/auth/calendar.events"
+    "https://www.googleapis.com/auth/calendar.events",
+    "https://www.googleapis.com/auth/gmail.readonly"
 ]
 
 def get_db():
@@ -161,6 +162,64 @@ def pull(db: Session = Depends(get_db)):
     
     db.commit()
     return {"fetched": len(items), "synced": synced}
+
+@router.post("/pull-gmail", dependencies=[Depends(require_api_key)])
+def pull_gmail(db: Session = Depends(get_db)):
+    integ = get_integration(db)
+    token = ensure_token(db, integ)
+    headers = {"Authorization": f"Bearer {token}"}
+    
+    # List starred messages
+    starred_url = "https://gmail.googleapis.com/gmail/v1/users/me/messages"
+    resp = requests.get(starred_url, headers=headers, params={"q": "is:starred", "maxResults": 10}, timeout=15)
+    if resp.status_code != 200:
+        raise HTTPException(status_code=400, detail=resp.text)
+        
+    messages = resp.json().get("messages", [])
+    synced = 0
+    
+    for msg in messages:
+        msg_id = msg["id"]
+        # Check if already synced
+        exists = db.query(models.ExternalEvent).filter(
+            models.ExternalEvent.provider == "gmail",
+            models.ExternalEvent.external_id == msg_id
+        ).first()
+        if exists:
+            continue
+            
+        # Get message details (subject)
+        detail_url = f"https://gmail.googleapis.com/gmail/v1/users/me/messages/{msg_id}"
+        m_resp = requests.get(detail_url, headers=headers, timeout=15)
+        if m_resp.status_code != 200:
+            continue
+            
+        m_data = m_resp.json()
+        headers_list = m_data.get("payload", {}).get("headers", [])
+        subject = next((h["value"] for h in headers_list if h["name"] == "Subject"), "Untitled Email")
+        snippet = m_data.get("snippet", "")
+        
+        new_task = models.Task(
+            user_id=DEFAULT_USER_ID,
+            title=f"Email: {subject}",
+            description=snippet,
+            labels="email,starred",
+            status="open"
+        )
+        db.add(new_task)
+        db.flush()
+        
+        ext_event = models.ExternalEvent(
+            task_id=new_task.id,
+            provider="gmail",
+            external_id=msg_id,
+            last_synced_at=datetime.utcnow()
+        )
+        db.add(ext_event)
+        synced += 1
+        
+    db.commit()
+    return {"fetched": len(messages), "synced": synced}
 
 @router.post("/push", dependencies=[Depends(require_api_key)])
 def push(db: Session = Depends(get_db)):

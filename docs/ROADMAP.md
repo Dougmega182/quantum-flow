@@ -1,20 +1,15 @@
-# 2026 Roadmap
+# Quantum Flow Roadmap
 
-## Q1 – Foundation
-- Trading system defined and paper traded
-- Quantum Flow MVP operational
-- Weekly review ritual locked
+## Completed (Q1 2026)
+- [x] **Stack Consolidation**: Unified Docker environment, single `.env`, cleaned root.
+- [x] **UI Foundations**: Sidebars, Headers, and branding (Premium Logo).
+- [x] **Focus Engine**: Pomodoro timer with custom presets (5-45m).
+- [x] **Identity**: User profile persistence with `avatar_url`.
 
-## Q2 – Execution
-- Live trading with capped risk
-- LinkedIn repositioned
-- Song #1 completed
+## In Progress (Phase 11)
+- [ ] **Project Vault**: Obsidian-like markdown projects with `[[WikiLinks]]`.
+- [ ] **Graph View**: Visualizing project/task relationships as a force-directed graph.
 
-## Q3 – Scale
-- Trading position sizing
-- Song #2 completed
-- Japanese conversational competence
-
-## Q4 – Consolidation
-- Decide on productization
-- Song #3 completed
+## Upcoming (Phase 12+)
+- [ ] **RAG Engine**: Integrating vector database for local context learning.
+- [ ] **ML Optimizer**: Smart scheduling based on historical energy levels.

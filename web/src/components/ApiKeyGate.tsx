@@ -1,9 +1,18 @@
-import { useState } from "react";
+import { useState, createContext, useContext } from "react";
 import { setApiKey, clearApiKey } from "../lib/api";
+
+const LogoutContext = createContext<() => void>(() => { });
+export const useLogout = () => useContext(LogoutContext);
 
 export function ApiKeyGate(props: { children: React.ReactNode }) {
     const [key, setKey] = useState(localStorage.getItem("QF_API_KEY") || "");
     const [saved, setSaved] = useState(Boolean(localStorage.getItem("QF_API_KEY")));
+
+    const handleLogout = () => {
+        clearApiKey();
+        setSaved(false);
+        setKey("");
+    };
 
     if (!saved) {
         return (
@@ -30,19 +39,10 @@ export function ApiKeyGate(props: { children: React.ReactNode }) {
     }
 
     return (
-        <div style={{ fontFamily: "system-ui" }}>
-            <div style={{ padding: 12, borderBottom: "1px solid #eee" }}>
-                <button
-                    onClick={() => {
-                        clearApiKey();
-                        setSaved(false);
-                        setKey("");
-                    }}
-                >
-                    Sign out (clear key)
-                </button>
+        <LogoutContext.Provider value={handleLogout}>
+            <div style={{ display: "flex", flex: 1, height: "100vh", width: "100vw", overflow: "hidden" }}>
+                {props.children}
             </div>
-            {props.children}
-        </div>
+        </LogoutContext.Provider>
     );
 }

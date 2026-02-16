@@ -6,11 +6,13 @@ class TaskBase(BaseModel):
     title: constr(strip_whitespace=True, min_length=1, max_length=255)
     description: Optional[str] = None
     intent_id: Optional[int] = None
+    priority: Optional[str] = None
     labels: Optional[str] = None
     tags: Optional[str] = None
     due_at: Optional[datetime] = None
     duration_minutes: Optional[int] = None
     parent_id: Optional[int] = None
+    energy_level: Optional[str] = None
 
 class TaskCreate(TaskBase):
     status: Optional[str] = "open"  # allow override, validated in router
@@ -25,6 +27,7 @@ class TaskUpdate(BaseModel):
     due_at: Optional[datetime] = None
     duration_minutes: Optional[int] = None
     parent_id: Optional[int] = None
+    energy_level: Optional[str] = None
     status: Optional[str] = None  # open, in_progress, done
 
 class TaskOut(BaseModel):
@@ -40,6 +43,7 @@ class TaskOut(BaseModel):
     due_at: datetime | None
     duration_minutes: int | None
     parent_id: int | None
+    energy_level: str | None
     created_at: datetime
     updated_at: datetime
     completed_at: datetime | None

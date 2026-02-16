@@ -78,3 +78,13 @@ def email_status():
 @router.post("/email/ingest")
 def email_ingest():
     return {"provider": "email", "ingested": True}
+
+@router.post("/slack/webhook")
+def slack_webhook(payload: dict):
+    # Placeholder for Slack 'Taskify' shortcut
+    # In production, verify Slack signature
+    text = payload.get("text", "New Slack Task")
+    user = payload.get("user_id", "unknown")
+    
+    # We'd create a task here
+    return {"status": "received", "task_created": False, "note": "Verification and task creation logic pending signature setup"}

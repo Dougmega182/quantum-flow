@@ -1,25 +1,32 @@
+name: quantum-flow
+
 services:
   api:
+    container_name: quantumflow-api
     build:
       context: ./backend
       dockerfile: Dockerfile
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8005 --reload
     volumes:
       - ./backend:/code
+    working_dir: /code
     ports:
-      - "8005:8000"
+      - "8005:8005"
     env_file:
-      - .env
+      - ./.env
+    environment:
+      - PYTHONPATH=/code
+      - DATABASE_URL=postgresql+psycopg2://quantum:quantum123@db:5432/quantum_flow
+      - ALLOW_ORIGINS=https://parakeet-novel-accurately.ngrok-free.app
     depends_on:
       - db
-    environment:
-      - PYTHONPATH=/app
 
   db:
+    container_name: quantumflow-db
     image: postgres:15
     environment:
       POSTGRES_USER: quantum
-      POSTGRES_PASSWORD: quantum
+      POSTGRES_PASSWORD: quantum123
       POSTGRES_DB: quantum_flow
     volumes:
       - pgdata:/var/lib/postgresql/data

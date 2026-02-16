@@ -23,7 +23,6 @@ export function TasksPage({ view: initialView, label, onTaskSelect }: TasksPageP
     const [sort, setSort] = useState<"due_at_asc" | "due_at_desc">(saved.sort ?? "due_at_asc");
     const [items, setItems] = useState<Task[]>([]);
     const [title, setTitle] = useState("");
-    const [dueAt, setDueAt] = useState<string>("");
     const [err, setErr] = useState<string | null>(null);
     const { toasts, push, dismiss } = useToasts();
     const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -62,7 +61,7 @@ export function TasksPage({ view: initialView, label, onTaskSelect }: TasksPageP
     return (
         <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-                <h2 style={{ fontSize: 28, textTransform: "capitalize", fontWeight: 800 }}>{label || view || "Inbox"}</h2>
+                <h2 style={{ fontSize: 28, textTransform: "capitalize", fontWeight: 800 }}>{label || (view === "inbox" ? "Unified Inbox" : view) || "Unified Inbox"}</h2>
                 <div style={{ display: "flex", gap: 12 }}>
                     <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)} style={{ border: "none", backgroundColor: "transparent", opacity: 0.5, fontWeight: 600 }}>
                         <option value="">Any status</option>
@@ -79,25 +78,26 @@ export function TasksPage({ view: initialView, label, onTaskSelect }: TasksPageP
 
             <div style={{
                 display: "flex",
+                alignItems: "center",
                 gap: 12,
                 marginBottom: 32,
                 backgroundColor: "#fff",
-                padding: "20px",
-                borderRadius: "16px",
+                padding: "12px 16px",
+                borderRadius: "10px",
                 border: "1px solid var(--border-color)",
-                boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)"
+                boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
             }}>
+                <div style={{ color: "var(--text-muted)", fontSize: 20 }}>+</div>
                 <input
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Capture an idea..."
-                    style={{ flex: 1, border: "none", fontSize: 18, outline: "none" }}
+                    placeholder="Add new task"
+                    style={{ flex: 1, border: "none", fontSize: 15, outline: "none", backgroundColor: "transparent" }}
                     onKeyDown={(e) => {
                         if (e.key === "Enter" && title.trim()) {
                             (async () => {
                                 await api.taskCreate({
                                     title,
-                                    due_at: dueAt || undefined,
                                     labels: label || undefined
                                 });
                                 setTitle("");
@@ -107,34 +107,51 @@ export function TasksPage({ view: initialView, label, onTaskSelect }: TasksPageP
                         }
                     }}
                 />
-                <input type="date" value={dueAt} onChange={(e) => setDueAt(e.target.value)} style={{ border: "none", opacity: 0.3, cursor: "pointer", fontSize: 14 }} />
+                <div style={{
+                    width: 20,
+                    height: 20,
+                    borderRadius: 4,
+                    border: "1px solid var(--border-color)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: "var(--text-muted)",
+                    backgroundColor: "#f8fafc"
+                }}>C</div>
             </div>
 
             {err && <div style={{ color: "crimson", padding: 12 }}>{err}</div>}
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 {items.map((t) => (
                     <div
                         key={t.id}
+                        draggable
+                        onDragStart={(e) => {
+                            e.dataTransfer.setData("application/json", JSON.stringify(t));
+                            e.dataTransfer.effectAllowed = "move";
+                        }}
                         onClick={() => {
                             setSelectedId(t.id);
                             onTaskSelect?.(t);
                         }}
                         style={{
-                            padding: "12px 16px",
-                            backgroundColor: selectedId === t.id ? "var(--brand-light)" : "transparent",
-                            borderRadius: "10px",
+                            padding: "8px 12px",
+                            backgroundColor: selectedId === t.id ? "#f1f5f9" : "transparent",
+                            borderRadius: "8px",
                             display: "flex",
                             alignItems: "center",
-                            gap: 16,
+                            gap: 12,
                             cursor: "pointer",
-                            transition: "all 0.15s ease",
+                            transition: "background 0.1s ease",
+                            border: "1px solid transparent",
+                            borderColor: selectedId === t.id ? "var(--border-color)" : "transparent"
                         }}
                     >
-                        <input
-                            type="checkbox"
-                            checked={t.status === "done"}
-                            onChange={async (e) => {
+                        <div
+                            onClick={async (e) => {
                                 e.stopPropagation();
                                 if (t.status !== "done") await api.taskComplete(t.id);
                                 else await api.taskReopen(t.id);
@@ -142,42 +159,57 @@ export function TasksPage({ view: initialView, label, onTaskSelect }: TasksPageP
                                 await refresh();
                             }}
                             style={{
-                                width: 22,
-                                height: 22,
+                                width: 18,
+                                height: 18,
+                                borderRadius: "50%",
+                                border: `2px solid ${t.status === "done" ? "var(--status-done)" : "#d1d5db"}`,
+                                backgroundColor: t.status === "done" ? "var(--status-done)" : "transparent",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
                                 cursor: "pointer",
-                                accentColor: "var(--brand-color)",
                                 flexShrink: 0
                             }}
-                        />
-                        <div style={{ flex: 1, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                            <div>
-                                <div style={{
-                                    fontWeight: 500,
-                                    fontSize: 15,
-                                    textDecoration: t.status === "done" ? "line-through" : "none",
-                                    opacity: t.status === "done" ? 0.4 : 1,
-                                    color: selectedId === t.id ? "var(--brand-color)" : "inherit"
-                                }}>
-                                    {t.title}
-                                </div>
-                                {t.labels && (
-                                    <div style={{ display: "flex", gap: 4, marginTop: 4 }}>
-                                        {t.labels.split(",").map(l => (
-                                            <span key={l} style={{ fontSize: 10, padding: "2px 6px", backgroundColor: "#f3f4f6", borderRadius: 4, opacity: 0.7 }}>{l.trim()}</span>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                            {t.due_at && (
-                                <div style={{
-                                    fontSize: 12,
-                                    opacity: 0.5,
-                                    color: new Date(t.due_at) < new Date() && t.status !== "done" ? "var(--status-overdue)" : "inherit",
-                                    fontWeight: new Date(t.due_at) < new Date() && t.status !== "done" ? 700 : 400
-                                }}>
-                                    {new Date(t.due_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
-                                </div>
-                            )}
+                        >
+                            {t.status === "done" && <span style={{ color: "#fff", fontSize: 10 }}>✓</span>}
+                        </div>
+
+                        <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8 }}>
+                            {t.labels && t.labels.includes("email") && <span title="From Gmail" style={{ opacity: 0.6 }}>📧</span>}
+                            {t.labels && t.labels.includes("slack") && <span title="From Slack" style={{ opacity: 0.6 }}>💬</span>}
+                            <span style={{
+                                fontWeight: 500,
+                                fontSize: 14,
+                                textDecoration: t.status === "done" ? "line-through" : "none",
+                                opacity: t.status === "done" ? 0.4 : 1,
+                                color: "var(--text-main)"
+                            }}>
+                                {t.title}
+                            </span>
+                        </div>
+
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            {t.energy_level === "high" && <span title="High Energy" style={{ fontSize: 12 }}>🔥</span>}
+                            {t.energy_level === "medium" && <span title="Medium Energy" style={{ fontSize: 12 }}>⚡</span>}
+                            {t.energy_level === "low" && <span title="Low Energy" style={{ fontSize: 12 }}>🔋</span>}
+
+                            <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", opacity: 0.6 }}>{t.duration_minutes || 30}m</span>
+                            {t.labels && t.labels.split(",").map(l => {
+                                if (l.trim() === "email" || l.trim() === "slack") return null;
+                                return (
+                                    <span key={l} style={{
+                                        fontSize: 10,
+                                        fontWeight: 700,
+                                        padding: "2px 8px",
+                                        backgroundColor: l.trim() === "Admin" ? "#ffeef3" : "#e0f2fe",
+                                        color: l.trim() === "Admin" ? "#f1416c" : "#0369a1",
+                                        borderRadius: "4px",
+                                        textTransform: "capitalize"
+                                    }}>
+                                        {l.trim()}
+                                    </span>
+                                )
+                            })}
                         </div>
                     </div>
                 ))}

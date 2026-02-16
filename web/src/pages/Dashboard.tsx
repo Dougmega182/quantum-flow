@@ -4,17 +4,76 @@ import { TasksPage } from "./Tasks";
 import { IntegrationsPage } from "./Integrations";
 import { AutomationsPage } from "./Automations";
 import { SuggestionsPage } from "./Suggestions";
+import { AnalyticsPage } from "./Analytics";
 import { TemplatesPage } from "./Templates";
 import { RecurrencePage } from "./Recurrence";
 import { TaskEditor } from "../components/TaskEditor";
 import { CommandBar } from "../components/CommandBar";
-import type { Task } from "../lib/api";
+import { FocusModePage } from "./FocusMode";
+import { CalendarView } from "./Calendar";
+import { HelpPage } from "./Help";
+import { api, type Task, type SmartScheduleItem } from "../lib/api";
 import { useEffect } from "react";
+import { Header } from "../components/Header";
+import { AiAssistant } from "../components/AiAssistant";
+import { AiCenterPage } from "./AiCenter";
+import { PlanningWizard } from "./PlanningWizard";
+import { KanbanPage } from "./Kanban";
 
 export function Dashboard() {
     const [activeTab, setTab] = useState<any>("today");
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     const [showCommandBar, setShowCommandBar] = useState(false);
+    const [scheduledItems, setScheduledItems] = useState<SmartScheduleItem[]>([]);
+    const [isPlanning, setIsPlanning] = useState(false);
+
+    // Custom Lists & Projects State
+    const [lists, setLists] = useState<{ id: string, label: string, icon: string }[]>(() => {
+        const saved = localStorage.getItem("qf_custom_lists");
+        return saved ? JSON.parse(saved) : [
+            { id: "list:Work", label: "Work", icon: "💼" },
+            { id: "list:Home", label: "Home", icon: "🏠" },
+        ];
+    });
+
+    const [projects, setProjects] = useState<{ id: string, label: string, icon: string }[]>(() => {
+        const saved = localStorage.getItem("qf_custom_projects");
+        return saved ? JSON.parse(saved) : [
+            { id: "proj:Quantum", label: "Quantum Flow", icon: "🚀" },
+        ];
+    });
+
+    useEffect(() => {
+        localStorage.setItem("qf_custom_lists", JSON.stringify(lists));
+    }, [lists]);
+
+    useEffect(() => {
+        localStorage.setItem("qf_custom_projects", JSON.stringify(projects));
+    }, [projects]);
+
+    const handleAddList = () => {
+        const name = prompt("List name:");
+        if (name) setLists([...lists, { id: `list:${name}`, label: name, icon: "📁" }]);
+    };
+
+    const handleDeleteList = (id: string) => {
+        if (confirm(`Delete list "${id.replace("list:", "")}"?`)) {
+            setLists(lists.filter(l => l.id !== id));
+            if (activeTab === id) setTab("today");
+        }
+    };
+
+    const handleAddProject = () => {
+        const name = prompt("Project name:");
+        if (name) setProjects([...projects, { id: `proj:${name}`, label: name, icon: "🚀" }]);
+    };
+
+    const handleDeleteProject = (id: string) => {
+        if (confirm(`Delete project "${id.replace("proj:", "")}"?`)) {
+            setProjects(projects.filter(p => p.id !== id));
+            if (activeTab === id) setTab("today");
+        }
+    };
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -31,11 +90,23 @@ export function Dashboard() {
         setShowCommandBar(false);
         if (action === "today") setTab("today");
         if (action === "inbox") setTab("tasks");
-        // Add more actions as needed
+        if (action === "focus") setTab("focus");
+    };
+
+    const handleAutoPlan = async () => {
+        setIsPlanning(true);
+        try {
+            const res = await api.aiSmartSchedule();
+            setScheduledItems(res.items);
+        } catch (e) {
+            console.error("Planning failed", e);
+        } finally {
+            setIsPlanning(false);
+        }
     };
 
     const renderContent = (onTaskClick: (t: Task) => void) => {
-        if (activeTab.startsWith("list:")) {
+        if (activeTab.startsWith("list:") || activeTab.startsWith("proj:")) {
             const label = activeTab.split(":")[1];
             return <TasksPage view="" label={label} onTaskSelect={onTaskClick} />;
         }
@@ -54,93 +125,235 @@ export function Dashboard() {
             case "integrations": return <IntegrationsPage />;
             case "automations": return <AutomationsPage />;
             case "ai": return <SuggestionsPage />;
+            case "analytics": return <AnalyticsPage />;
+            case "focus": return <FocusModePage />;
+            case "calendar": return <CalendarView />;
+            case "help": return <HelpPage />;
+            case "ai_center": return <AiCenterPage />;
+            case "kanban": return <KanbanPage />;
+            case "planning": return <PlanningWizard onComplete={() => setTab("today")} />;
             default: return <TasksPage onTaskSelect={onTaskClick} />;
         }
     };
 
+    const [sidebarWidth, setSidebarWidth] = useState(260);
+    const [contextWidth, setContextWidth] = useState(400);
+    const [resizing, setResizing] = useState<"sidebar" | "context" | null>(null);
+
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            if (resizing === "sidebar") {
+                const newWidth = e.clientX;
+                if (newWidth > 150 && newWidth < 500) setSidebarWidth(newWidth);
+            } else if (resizing === "context") {
+                const newWidth = window.innerWidth - e.clientX;
+                if (newWidth > 200 && newWidth < 800) setContextWidth(newWidth);
+            }
+        };
+        const handleMouseUp = () => setResizing(null);
+
+        if (resizing) {
+            window.addEventListener("mousemove", handleMouseMove);
+            window.addEventListener("mouseup", handleMouseUp);
+        }
+        return () => {
+            window.removeEventListener("mousemove", handleMouseMove);
+            window.removeEventListener("mouseup", handleMouseUp);
+        };
+    }, [resizing]);
+
     return (
-        <div style={{ display: "flex", width: "100%", height: "100vh" }}>
+        <div style={{ display: "flex", flexDirection: "column", width: "100vw", height: "100vh", overflow: "hidden" }}>
             {showCommandBar && <CommandBar onClose={() => setShowCommandBar(false)} onAction={handleCommand} />}
-            {/* Column 1: Side Navigation */}
-            <Sidebar activeTab={activeTab} setTab={setTab} />
 
-            {/* Column 2: Main Content Area (Tasks) */}
-            <main style={{
-                flex: 1,
-                backgroundColor: "var(--bg-app)",
-                padding: "32px",
-                overflowY: "auto",
-                borderRight: "1px solid var(--border-color)"
-            }}>
-                {renderContent((t) => setSelectedTask(t))}
-            </main>
+            <Header onTabSelect={setTab} />
 
-            {/* Column 3: Context Pane (Calendar or Editor) */}
-            <aside style={{
-                width: 380,
-                backgroundColor: "#fff",
-                padding: "24px",
-                display: "flex",
-                flexDirection: "column",
-                gap: 20,
-                boxShadow: "-1px 0 10px rgba(0,0,0,0.02)"
-            }}>
-                {selectedTask ? (
-                    <TaskEditor
-                        task={selectedTask}
-                        onClose={() => setSelectedTask(null)}
-                        onUpdate={() => {
-                            // Trigger refresh? We'd ideally use a global context or event emitter
-                            // For now, it will update when Dashboard is re-rendered or TasksPage refreshes itself
+            <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+                {/* Column 1: Side Navigation */}
+                <div style={{
+                    width: sidebarWidth,
+                    display: "flex",
+                    flexDirection: "column",
+                    borderRight: "1px solid var(--border-color)",
+                    flexShrink: 0,
+                    position: "relative"
+                }}>
+                    <Sidebar
+                        activeTab={activeTab}
+                        setTab={setTab}
+                        lists={lists}
+                        projects={projects}
+                        onAddList={handleAddList}
+                        onDeleteList={handleDeleteList}
+                        onAddProject={handleAddProject}
+                        onDeleteProject={handleDeleteProject}
+                    />
+
+                    {/* Resize Handle */}
+                    <div
+                        onMouseDown={() => setResizing("sidebar")}
+                        style={{
+                            position: "absolute",
+                            top: 0,
+                            right: -4,
+                            width: 8,
+                            height: "100%",
+                            cursor: "col-resize",
+                            zIndex: 100,
+                            backgroundColor: resizing === "sidebar" ? "var(--brand-color)" : "transparent",
+                            transition: "background-color 0.2s"
                         }}
                     />
-                ) : (
-                    <>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                            <h3 style={{ fontSize: 16 }}>February 2026</h3>
-                        </div>
+                </div>
 
-                        {/* Mock Calendar Grid */}
-                        <div style={{
-                            display: "grid",
-                            gridTemplateColumns: "repeat(7, 1fr)",
-                            gap: 4,
-                            fontSize: 12,
-                            textAlign: "center"
-                        }}>
-                            {["S", "M", "T", "W", "T", "F", "S"].map(d => (
-                                <div key={d} style={{ fontWeight: 600, opacity: 0.5, padding: 4 }}>{d}</div>
-                            ))}
-                            {Array.from({ length: 28 }, (_, i) => (
-                                <div
-                                    key={i}
+                {/* Column 2: Main Content Area (Tasks) */}
+                <main style={{
+                    flex: 1,
+                    backgroundColor: "var(--bg-app)",
+                    padding: "32px",
+                    overflowY: "auto",
+                    borderRight: "1px solid var(--border-color)",
+                    minWidth: 350
+                }}>
+                    {renderContent((t) => setSelectedTask(t))}
+                </main>
+
+                {/* Column 3: Context Pane (Calendar or Editor) */}
+                <aside style={{
+                    width: contextWidth,
+                    backgroundColor: "#fff",
+                    padding: "24px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 20,
+                    boxShadow: "-4px 0 20px rgba(0,0,0,0.01)",
+                    flexShrink: 0,
+                    position: "relative",
+                    overflowY: "auto"
+                }}>
+                    {/* Resize Handle (Left of Aside) */}
+                    <div
+                        onMouseDown={() => setResizing("context")}
+                        style={{
+                            position: "absolute",
+                            top: 0,
+                            left: -4,
+                            width: 8,
+                            height: "100%",
+                            cursor: "col-resize",
+                            zIndex: 100,
+                            backgroundColor: resizing === "context" ? "var(--brand-color)" : "transparent",
+                            transition: "background-color 0.2s"
+                        }}
+                    />
+                    {selectedTask ? (
+                        <TaskEditor
+                            task={selectedTask}
+                            onClose={() => setSelectedTask(null)}
+                            onUpdate={() => {
+                                // Update logic
+                            }}
+                        />
+                    ) : (
+                        <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                                <h3 style={{ fontSize: 15, fontWeight: 800 }}>Schedule — Feb 16</h3>
+                                <button
+                                    onClick={handleAutoPlan}
+                                    disabled={isPlanning}
                                     style={{
-                                        padding: 8,
-                                        borderRadius: 4,
-                                        backgroundColor: i + 1 === 13 ? "var(--brand-color)" : "transparent",
-                                        color: i + 1 === 13 ? "#fff" : "inherit",
-                                        cursor: "pointer"
+                                        fontSize: 11,
+                                        fontWeight: 700,
+                                        padding: "4px 10px",
+                                        borderRadius: 6,
+                                        border: "none",
+                                        backgroundColor: "var(--brand-color)",
+                                        color: "#fff",
+                                        cursor: "pointer",
+                                        opacity: isPlanning ? 0.5 : 1
                                     }}
                                 >
-                                    {i + 1}
-                                </div>
-                            ))}
-                        </div>
+                                    {isPlanning ? "Planning..." : "Auto Plan"}
+                                </button>
+                            </div>
 
-                        <div style={{ height: 1, backgroundColor: "var(--border-color)" }} />
+                            {/* Integrated Planning View (Side-by-side) */}
+                            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 0, position: "relative", overflowY: "auto" }}>
+                                {Array.from({ length: 15 }, (_, i) => {
+                                    const hour = i + 8; // 8am to 10pm
+                                    return (
+                                        <div
+                                            key={hour}
+                                            onDragOver={(e) => {
+                                                e.preventDefault();
+                                                e.dataTransfer.dropEffect = "move";
+                                                e.currentTarget.style.backgroundColor = "#f8fafc";
+                                            }}
+                                            onDragLeave={(e) => {
+                                                e.currentTarget.style.backgroundColor = "transparent";
+                                            }}
+                                            onDrop={async (e) => {
+                                                e.preventDefault();
+                                                e.currentTarget.style.backgroundColor = "transparent";
+                                                const data = e.dataTransfer.getData("application/json");
+                                                if (data) {
+                                                    const task = JSON.parse(data);
+                                                    const newDate = new Date();
+                                                    newDate.setHours(hour, 0, 0, 0);
+                                                    await api.taskUpdate(task.id, {
+                                                        due_at: newDate.toISOString(),
+                                                        status: "open"
+                                                    });
+                                                    setTab("today"); // Force refresh
+                                                }
+                                            }}
+                                            style={{ height: 60, borderTop: "1px solid #f0f0f0", position: "relative", transition: "background 0.2s" }}
+                                        >
+                                            <div style={{ position: "absolute", top: -8, left: 0, fontSize: 11, opacity: 0.3, fontWeight: 700 }}>
+                                                {hour > 12 ? `${hour - 12} PM` : `${hour} AM`}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
 
-                        <div>
-                            <h4 style={{ fontSize: 13, marginBottom: 12, opacity: 0.7 }}>Schedule</h4>
-                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                                <div style={{ padding: 12, borderRadius: 8, fontSize: 13, backgroundColor: "var(--brand-light)", borderLeft: "4px solid var(--brand-color)" }}>
-                                    <div style={{ fontWeight: 600 }}>Google Calendar Sync</div>
-                                    <div style={{ opacity: 0.7 }}>09:00 - 10:00</div>
-                                </div>
+                                {/* Render Auto-Planned Items */}
+                                {scheduledItems.map((item, idx) => {
+                                    const start = new Date(item.start_time);
+                                    const hour = start.getHours();
+                                    const minutes = start.getMinutes();
+                                    const top = (hour - 8) * 60 + minutes;
+                                    const height = item.duration_minutes;
+
+                                    return (
+                                        <div key={item.task_id} style={{
+                                            position: "absolute",
+                                            top: top,
+                                            left: 40,
+                                            right: 0,
+                                            height: height,
+                                            backgroundColor: idx % 2 === 0 ? "var(--brand-light)" : "#f0f7ff",
+                                            borderLeft: `4px solid ${idx % 2 === 0 ? "var(--brand-color)" : "#3b82f6"}`,
+                                            borderRadius: "0 8px 8px 0",
+                                            padding: "8px 12px",
+                                            fontSize: 12,
+                                            boxShadow: "0 2px 4px rgba(0,0,0,0.02)",
+                                            zIndex: 10,
+                                            overflow: "hidden"
+                                        }}>
+                                            <div style={{ fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.title}</div>
+                                            <div style={{ opacity: 0.6, fontSize: 10 }}>
+                                                {start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
-                    </>
-                )}
-            </aside>
+                    )}
+                </aside>
+
+                <AiAssistant />
+            </div>
         </div>
     );
 }

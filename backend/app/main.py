@@ -6,20 +6,22 @@ from app.routes import intents, tasks, task_templates, recurrence, integrations,
 from app.routes import ai
 from fastapi import Request, Header, HTTPException
 from app.config import settings
-from app.routes import google_calendar
+from app.routes import google_calendar, analytics, ingest, users
+app = FastAPI(title="Quantum Flow Intent Service", version="0.1")
 
 API_KEY = os.getenv("API_KEY")
 ALLOW_ORIGINS = [o.strip() for o in os.getenv("ALLOW_ORIGINS", "*").split(",")]
+# Add ngrok if present
+if "parakeet-novel-accurately.ngrok-free.app" not in ALLOW_ORIGINS:
+    ALLOW_ORIGINS.append("https://parakeet-novel-accurately.ngrok-free.app")
 
 from app.auth import require_api_key
 
-app = FastAPI(title="Quantum Flow Intent Service", version="0.1")
-
-from fastapi.middleware.cors import CORSMiddleware
+app.include_router(ingest.router)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:8005"],  # add your dev hosts
+    allow_origins=ALLOW_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -49,8 +51,10 @@ def metrics():
 
 # Public / Selective routes first
 app.include_router(google_calendar.router)
+app.include_router(analytics.router, dependencies=[Depends(require_api_key)])
 
 # Protected routes
+app.include_router(users.router, dependencies=[Depends(require_api_key)])
 app.include_router(intents.router, dependencies=[Depends(require_api_key)])
 app.include_router(tasks.router, dependencies=[Depends(require_api_key)])
 app.include_router(task_templates.router, dependencies=[Depends(require_api_key)])

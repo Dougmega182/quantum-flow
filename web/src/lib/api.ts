@@ -44,6 +44,8 @@ export type Task = {
     due_at: string | null;
     duration_minutes: number | null;
     parent_id: number | null;
+    depends_on_id: number | null;
+    energy_level: string | null;
     created_at: string;
     updated_at: string;
     completed_at: string | null;
@@ -63,6 +65,19 @@ export type AISuggestion = {
     action_type: string;
     payload: Record<string, any>;
     confidence: number;
+};
+
+export type SmartScheduleItem = {
+    task_id: number;
+    title: string;
+    start_time: string;
+    end_time: string;
+    duration_minutes: number;
+};
+
+export type SmartScheduleResponse = {
+    items: SmartScheduleItem[];
+    message: string;
 };
 
 export type TaskTemplate = {
@@ -85,9 +100,9 @@ export const api = {
         const q = qs.toString();
         return request<TaskList>(`/v1/tasks${q ? `?${q}` : ""}`);
     },
-    taskCreate: (body: { title: string; description?: string; due_at?: string | null; priority?: string | null; labels?: string; tags?: string; duration_minutes?: number; parent_id?: number }) =>
+    taskCreate: (body: { title: string; description?: string; due_at?: string | null; priority?: string | null; labels?: string; tags?: string; duration_minutes?: number; parent_id?: number; depends_on_id?: number | null; energy_level?: string }) =>
         request<Task>(`/v1/tasks`, { method: "POST", body: JSON.stringify(body) }),
-    taskUpdate: (id: number, body: Partial<{ title: string; description: string; due_at: string; priority: string; labels: string; tags: string; status: string; duration_minutes: number; parent_id: number }>) =>
+    taskUpdate: (id: number, body: Partial<{ title: string; description: string; due_at: string; priority: string; labels: string; tags: string; status: string; duration_minutes: number; parent_id: number; depends_on_id: number | null; energy_level: string }>) =>
         request<Task>(`/v1/tasks/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
     taskComplete: (id: number) => request<Task>(`/v1/tasks/${id}/complete`, { method: "POST" }),
     taskReopen: (id: number) => request<Task>(`/v1/tasks/${id}/reopen`, { method: "POST" }),
@@ -112,6 +127,7 @@ export const api = {
     googleAuthUrl: () => request<{ url: string }>(`/v1/google-calendar/auth-url`),
     googleStatus: () => request<{ status: string; has_token: boolean }>(`/v1/google-calendar/status`),
     googlePull: () => request<{ fetched: number; synced: number }>(`/v1/google-calendar/pull`, { method: "POST" }),
+    gmailPull: () => request<{ fetched: number; synced: number }>(`/v1/google-calendar/pull-gmail`, { method: "POST" }),
     googlePush: () => request<{ pushed: number }>(`/v1/google-calendar/push`, { method: "POST" }),
 
     // Automations
@@ -123,6 +139,18 @@ export const api = {
     automationRunAll: () => request<AutomationRun[]>(`/v1/automations/run-all`, { method: "POST" }),
 
     aiSuggest: () => request<AISuggestion[]>(`/v1/ai/suggest`),
+    aiSmartSchedule: () => request<SmartScheduleResponse>(`/v1/ai/smart-schedule`, { method: "POST" }),
+    analyticsStats: () => request<{
+        total_tasks: number;
+        completed_tasks: number;
+        completion_rate: number;
+        energy_distribution: Record<string, number>;
+        weekly_focus: Record<string, number>;
+    }>(`/v1/analytics/stats`),
+
+    // User Profile
+    userMe: () => request<{ id: number; email: string; avatar_url: string | null }>(`/v1/users/me`),
+    userUpdateMe: (body: { avatar_url: string }) => request<{ id: number; email: string; avatar_url: string | null }>(`/v1/users/me`, { method: "PATCH", body: JSON.stringify(body) }),
 };
 
 export type RecurrenceRule = {

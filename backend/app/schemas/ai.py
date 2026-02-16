@@ -13,3 +13,14 @@ class AISummaryRequest(BaseModel):
 
 class AISummaryResponse(BaseModel):
     summary: str
+
+class SmartScheduleItem(BaseModel):
+    task_id: int
+    title: str
+    start_time: str
+    end_time: str
+    duration_minutes: int
+
+class SmartScheduleResponse(BaseModel):
+    items: List[SmartScheduleItem]
+    message: str

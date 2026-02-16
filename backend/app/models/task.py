@@ -14,8 +14,10 @@ class Task(Base):
     due_at = Column(DateTime(timezone=True), nullable=True)
     duration_minutes = Column(Integer, nullable=True)
     parent_id = Column(Integer, ForeignKey("tasks.id", ondelete="CASCADE"), nullable=True, index=True)
+    depends_on_id = Column(Integer, ForeignKey("tasks.id", ondelete="SET NULL"), nullable=True, index=True)
     labels = Column(Text, nullable=True) # comma-separated
     tags = Column(Text, nullable=True)   # comma-separated
+    energy_level = Column(String(16), nullable=True) # low, medium, high
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
     completed_at = Column(DateTime(timezone=True), nullable=True)

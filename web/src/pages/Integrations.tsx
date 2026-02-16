@@ -57,6 +57,19 @@ export function IntegrationsPage() {
         }
     }
 
+    async function handleGmailPull() {
+        setLoading(true);
+        setErr(null);
+        try {
+            const res = await api.gmailPull();
+            push(`Fetched ${res.fetched} emails, synced ${res.synced} new tasks`, "ok");
+        } catch (e) {
+            setErr(String(e));
+        } finally {
+            setLoading(false);
+        }
+    }
+
     return (
         <div>
             <h2>Integrations</h2>
@@ -94,6 +107,32 @@ export function IntegrationsPage() {
                             </button>
                         </div>
                     )}
+                </div>
+            </div>
+
+            <div style={{ border: "1px solid #eee", padding: 20, borderRadius: 8, background: "white", marginTop: 24 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                        <h3 style={{ margin: 0 }}>Gmail Inbox</h3>
+                        <p style={{ margin: "4px 0", color: "#666" }}>Ingest starred emails as tasks into your Inbox.</p>
+                    </div>
+                    {status?.status === "connected" && (
+                        <button onClick={handleGmailPull} disabled={loading} style={{ background: "#f8f9fa", border: "1px solid #ddd", padding: "10px 20px" }}>
+                            {loading ? "Syncing..." : "Ingest Starred Emails"}
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            <div style={{ border: "1px solid #eee", padding: 20, borderRadius: 8, background: "white", marginTop: 24, opacity: 0.6 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                        <h3 style={{ margin: 0 }}>Slack (Coming Soon)</h3>
+                        <p style={{ margin: "4px 0", color: "#666" }}>Capture Slack messages using the 'Taskify' shortcut. [Webhook Endpoint: /v1/integrations/slack/webhook]</p>
+                    </div>
+                    <button disabled style={{ background: "#eee", border: "1px solid #ddd", color: "#999", padding: "10px 20px" }}>
+                        Setup Webhook
+                    </button>
                 </div>
             </div>
 
