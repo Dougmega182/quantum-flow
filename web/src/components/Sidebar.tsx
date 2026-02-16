@@ -22,7 +22,6 @@ export function Sidebar({
     onAddProject,
     onDeleteProject
 }: SidebarProps) {
-    const logout = useLogout();
     const navItems = [
         { id: "tasks", label: "Inbox", icon: "📥" },
         { id: "today", label: "Today", icon: "☀️" },
@@ -30,16 +29,10 @@ export function Sidebar({
         { id: "all", label: "All Tasks", icon: "📋" },
         { id: "kanban", label: "Kanban Board", icon: "🍱" },
         { id: "calendar", label: "Calendar", icon: "📅" },
+        { id: "review", label: "Weekly Review", icon: "📈" },
+        { id: "graph", label: "Project Graph", icon: "🕸️" },
+        { id: "search", label: "Semantic Search", icon: "🔍" },
         { id: "planning", label: "Daily Planning", icon: "☀️" },
-    ];
-
-    const secondaryItems = [
-        { id: "analytics", label: "Analytics", icon: "📊" },
-        { id: "integrations", label: "Integrations", icon: "🔌" },
-        { id: "automations", label: "Automations", icon: "⚡" },
-        { id: "ai", label: "AI Suggestions", icon: "✨" },
-        { id: "help", label: "Help", icon: "❓" },
-        { id: "logout", label: "Sign out", icon: "🚪", action: logout },
     ];
 
     return (

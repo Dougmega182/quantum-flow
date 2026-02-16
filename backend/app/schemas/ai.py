@@ -20,6 +20,7 @@ class SmartScheduleItem(BaseModel):
     start_time: str
     end_time: str
     duration_minutes: int
+    rationale: Optional[str] = None
 
 class SmartScheduleResponse(BaseModel):
     items: List[SmartScheduleItem]

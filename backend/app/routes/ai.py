@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.db import SessionLocal
 from app import models
 from app.schemas.ai import AISuggestion, AISummaryRequest, AISummaryResponse, SmartScheduleItem, SmartScheduleResponse
+from app.services.embeddings import compute_embedding, sync_task_embeddings, sync_project_embeddings
 
 router = APIRouter(prefix="/v1/ai", tags=["ai"])
 DEFAULT_USER_ID = 1
@@ -43,6 +44,36 @@ def suggest(db: Session = Depends(get_db)):
             payload={"template_id": tpl.id, "due_at": now.isoformat()},
             confidence=0.7,
         ))
+
+    # RAG: Semantic Context Suggestions
+    # Sync first to ensure we have data
+    sync_project_embeddings(db, DEFAULT_USER_ID)
+    
+    # Simple grounding: Find the most recently updated project and suggest relevant next steps
+    latest_project = db.query(models.Project).filter(
+        models.Project.user_id == DEFAULT_USER_ID,
+        models.Project.content.isnot(None)
+    ).order_by(models.Project.updated_at.desc()).first()
+    
+    if latest_project:
+        # Conceptual: Find tasks semantically similar to this project
+        query_vector = compute_embedding(latest_project.name)
+        related_tasks = db.query(models.Task).filter(
+            models.Task.user_id == DEFAULT_USER_ID,
+            models.Task.status == "open"
+        ).order_by(
+            models.Task.embedding.cosine_distance(query_vector)
+        ).limit(2).all()
+        
+        for rt in related_tasks:
+            suggestions.append(AISuggestion(
+                title=f"Context: {latest_project.name}",
+                description=f"This task seems relevant to your active project: {rt.title}",
+                action_type="focus_task",
+                payload={"task_id": rt.id},
+                confidence=0.6,
+            ))
+
     return suggestions
 
 @router.post("/summarize", response_model=AISummaryResponse)
@@ -74,8 +105,21 @@ def smart_schedule(db: Session = Depends(get_db)):
         models.Task.status != "done",
     ).all()
 
-    # Energy-based peak hours: High energy -> 9 AM to 1 PM
-    peak_end = start_of_day + timedelta(hours=4)
+    # Dynamic Peak Performance Detection (New ML Optimizer Logic)
+    # Fetch focus heatmap from the last 30 days
+    last_month = datetime.utcnow() - timedelta(days=30)
+    hourly_stats = db.query(func.extract('hour', models.Task.completed_at), func.count(models.Task.id))\
+        .filter(models.Task.status == "done", models.Task.completed_at >= last_month)\
+        .group_by(func.extract('hour', models.Task.completed_at)).all()
+    
+    heatmap = {int(h): c for h, c in hourly_stats}
+    # Heuristic: A peak is any hour with > 80% of the max completion count
+    max_completions = max(heatmap.values()) if heatmap else 0
+    peak_hours = {h for h, c in heatmap.items() if c >= max_completions * 0.8 and c > 0}
+    
+    if not peak_hours:
+        # Fallback to standard 9-1 if no data
+        peak_hours = {9, 10, 11, 12}
 
     # Sort tasks: Dependencies first, then priority, then energy match
     priority_map = {"high": 3, "medium": 2, "low": 1}
@@ -99,12 +143,28 @@ def smart_schedule(db: Session = Depends(get_db)):
         if current_time >= end_of_day:
             break
             
-        # Decision: If High Energy, try to slot in peak hours
-        # If Current Time is past peak and task is high energy, we still schedule it,
-        # but we prioritize high energy in peak slots.
-        
+        task_energy = (t.energy_level or "medium").lower()
         duration = t.duration_minutes or 30
         
+        # ML Optimization: If high energy task, try to find the next AVAILABLE peak hour
+        is_high_energy = task_energy == "high"
+        if is_high_energy and current_time.hour not in peak_hours:
+            # Look ahead for a peak slot
+            lookahead = current_time
+            found_peak = False
+            while lookahead < end_of_day:
+                if lookahead.hour in peak_hours:
+                    current_time = lookahead
+                    found_peak = True
+                    break
+                lookahead += timedelta(minutes=30)
+            # If no peak found today, just proceed from current
+        
+        end_time = current_time + timedelta(minutes=duration)
+        
+        if end_time > end_of_day:
+            continue
+            
         # Check dependency: Has it been scheduled in this run?
         # (Real implementation would check global schedule, here we just do this batch)
         if t.depends_on_id:
@@ -119,12 +179,16 @@ def smart_schedule(db: Session = Depends(get_db)):
         if end_time > end_of_day:
             continue
             
+        is_peak = current_time.hour in peak_hours
+        rationale = "Matches your productivity peak" if is_peak and is_high_energy else None
+        
         scheduled_items.append(SmartScheduleItem(
             task_id=t.id,
             title=t.title,
             start_time=current_time.isoformat(),
             end_time=end_time.isoformat(),
-            duration_minutes=duration
+            duration_minutes=duration,
+            rationale=rationale
         ))
         
         current_time = end_time + timedelta(minutes=5)

@@ -31,9 +31,19 @@ def get_stats(db: Session = Depends(get_db)):
     
     # Weekly Focus (last 7 days completed tasks)
     last_week = datetime.utcnow() - timedelta(days=7)
-    weekly_completed = db.query(func.date(models.Task.created_at), func.count(models.Task.id))\
-        .filter(models.Task.status == "done", models.Task.created_at >= last_week)\
-        .group_by(func.date(models.Task.created_at)).all()
+    weekly_completed = db.query(func.date(models.Task.completed_at), func.count(models.Task.id))\
+        .filter(models.Task.status == "done", models.Task.completed_at >= last_week)\
+        .group_by(func.date(models.Task.completed_at)).all()
+    
+    # Focus Heatmap (completions by hour over last 30 days)
+    last_month = datetime.utcnow() - timedelta(days=30)
+    hourly_completions = db.query(func.extract('hour', models.Task.completed_at), func.count(models.Task.id))\
+        .filter(models.Task.status == "done", models.Task.completed_at >= last_month)\
+        .group_by(func.extract('hour', models.Task.completed_at)).all()
+    
+    heatmap = {int(h): c for h, c in hourly_completions}
+    # Ensure all 24 hours are represented
+    full_heatmap = {h: heatmap.get(h, 0) for h in range(24)}
     
     # Map to daily counts
     focus_data = {str(d): c for d, c in weekly_completed}
@@ -43,5 +53,6 @@ def get_stats(db: Session = Depends(get_db)):
         "completed_tasks": completed,
         "completion_rate": (completed / total * 100) if total > 0 else 0,
         "energy_distribution": energy_dist,
-        "weekly_focus": focus_data
+        "weekly_focus": focus_data,
+        "focus_heatmap": full_heatmap
     }

@@ -19,6 +19,10 @@ import { AiAssistant } from "../components/AiAssistant";
 import { AiCenterPage } from "./AiCenter";
 import { PlanningWizard } from "./PlanningWizard";
 import { KanbanPage } from "./Kanban";
+import { ProjectVault } from "./ProjectVault";
+import { GraphView } from "../components/GraphView";
+import { WeeklyReview } from "./WeeklyReview";
+import { SemanticSearch } from "../components/SemanticSearch";
 
 export function Dashboard() {
     const [activeTab, setTab] = useState<any>("today");
@@ -27,7 +31,7 @@ export function Dashboard() {
     const [scheduledItems, setScheduledItems] = useState<SmartScheduleItem[]>([]);
     const [isPlanning, setIsPlanning] = useState(false);
 
-    // Custom Lists & Projects State
+    // Custom Lists State (Still in localStorage for now, but Projects moved to DB)
     const [lists, setLists] = useState<{ id: string, label: string, icon: string }[]>(() => {
         const saved = localStorage.getItem("qf_custom_lists");
         return saved ? JSON.parse(saved) : [
@@ -36,20 +40,31 @@ export function Dashboard() {
         ];
     });
 
-    const [projects, setProjects] = useState<{ id: string, label: string, icon: string }[]>(() => {
-        const saved = localStorage.getItem("qf_custom_projects");
-        return saved ? JSON.parse(saved) : [
-            { id: "proj:Quantum", label: "Quantum Flow", icon: "🚀" },
-        ];
-    });
+    // Projects State (DB Backed - Phase 11)
+    const [projects, setProjects] = useState<any[]>([]);
+
+    const refreshProjects = async () => {
+        try {
+            const res = await api.projectList();
+            // Map backend Project to Sidebar expected format if needed
+            setProjects(res.items.map(p => ({
+                id: `proj:${p.id}`,
+                label: p.name,
+                icon: p.emoji || "🚀",
+                rawId: p.id
+            })));
+        } catch (e) {
+            console.error("Failed to load projects", e);
+        }
+    };
+
+    useEffect(() => {
+        refreshProjects();
+    }, []);
 
     useEffect(() => {
         localStorage.setItem("qf_custom_lists", JSON.stringify(lists));
     }, [lists]);
-
-    useEffect(() => {
-        localStorage.setItem("qf_custom_projects", JSON.stringify(projects));
-    }, [projects]);
 
     const handleAddList = () => {
         const name = prompt("List name:");
@@ -63,15 +78,30 @@ export function Dashboard() {
         }
     };
 
-    const handleAddProject = () => {
+    const handleAddProject = async () => {
         const name = prompt("Project name:");
-        if (name) setProjects([...projects, { id: `proj:${name}`, label: name, icon: "🚀" }]);
+        if (name) {
+            try {
+                await api.projectCreate({ name, emoji: "🚀" });
+                refreshProjects();
+            } catch (e) {
+                alert("Failed to create project");
+            }
+        }
     };
 
-    const handleDeleteProject = (id: string) => {
+    const handleDeleteProject = async (id: string) => {
+        const rawId = projects.find(p => p.id === id)?.rawId;
+        if (!rawId) return;
+
         if (confirm(`Delete project "${id.replace("proj:", "")}"?`)) {
-            setProjects(projects.filter(p => p.id !== id));
-            if (activeTab === id) setTab("today");
+            try {
+                await api.projectDelete(rawId);
+                refreshProjects();
+                if (activeTab === id) setTab("today");
+            } catch (e) {
+                alert("Failed to delete project");
+            }
         }
     };
 
@@ -106,7 +136,12 @@ export function Dashboard() {
     };
 
     const renderContent = (onTaskClick: (t: Task) => void) => {
-        if (activeTab.startsWith("list:") || activeTab.startsWith("proj:")) {
+        if (activeTab.startsWith("proj:")) {
+            const id = parseInt(activeTab.split(":")[1]);
+            return <ProjectVault projectId={id} />;
+        }
+
+        if (activeTab.startsWith("list:")) {
             const label = activeTab.split(":")[1];
             return <TasksPage view="" label={label} onTaskSelect={onTaskClick} />;
         }
@@ -131,6 +166,9 @@ export function Dashboard() {
             case "help": return <HelpPage />;
             case "ai_center": return <AiCenterPage />;
             case "kanban": return <KanbanPage />;
+            case "graph": return <GraphView />;
+            case "review": return <WeeklyReview />;
+            case "search": return <SemanticSearch />;
             case "planning": return <PlanningWizard onComplete={() => setTab("today")} />;
             default: return <TasksPage onTaskSelect={onTaskClick} />;
         }
@@ -341,8 +379,15 @@ export function Dashboard() {
                                             overflow: "hidden"
                                         }}>
                                             <div style={{ fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.title}</div>
-                                            <div style={{ opacity: 0.6, fontSize: 10 }}>
-                                                {start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                                                <div style={{ opacity: 0.6, fontSize: 10 }}>
+                                                    {start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </div>
+                                                {(item as any).rationale && (
+                                                    <div style={{ fontSize: 9, fontWeight: 700, color: "var(--brand-color)", backgroundColor: "rgba(255,255,255,0.5)", padding: "1px 4px", borderRadius: 4 }}>
+                                                        ✨ {(item as any).rationale}
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     );

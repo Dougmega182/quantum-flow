@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLogout } from "./ApiKeyGate";
 import { PomodoroTimer } from "./PomodoroTimer";
+import { ThemeToggle } from "./ThemeToggle";
 import { api } from "../lib/api";
 
 interface HeaderProps {
@@ -77,8 +78,8 @@ export function Header({ onTabSelect }: HeaderProps) {
             </div>
 
             {/* Right: Actions & Profile */}
-            <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-                {/* Icons removed as per user request to eliminate mock data */}
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <ThemeToggle />
 
                 <div style={{ position: "relative" }}>
                     <div
@@ -164,6 +165,29 @@ export function Header({ onTabSelect }: HeaderProps) {
                                     <span style={{ fontSize: 16 }}>🚪</span>
                                     <span style={{ flex: 1, textAlign: "left", fontSize: 14, fontWeight: 500 }}>Sign out</span>
                                 </button>
+
+                                <div style={{ padding: "12px", borderTop: "1px solid var(--border-color)", display: "flex", flexDirection: "column", gap: 8 }}>
+                                    <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", opacity: 0.5 }}>Accent Color</div>
+                                    <div style={{ display: "flex", gap: 8 }}>
+                                        {["#9333ea", "#3b82f6", "#10b981", "#f59e0b", "#ef4444"].map(c => (
+                                            <div
+                                                key={c}
+                                                onClick={() => {
+                                                    document.documentElement.style.setProperty("--brand-color", c);
+                                                    localStorage.setItem("accent_color", c);
+                                                }}
+                                                style={{
+                                                    width: 24,
+                                                    height: 24,
+                                                    borderRadius: 6,
+                                                    backgroundColor: c,
+                                                    cursor: "pointer",
+                                                    border: "1px solid rgba(0,0,0,0.1)"
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
                         </>
                     )}

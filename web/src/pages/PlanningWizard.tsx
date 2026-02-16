@@ -134,24 +134,64 @@ export function PlanningWizard({ onComplete }: { onComplete: () => void }) {
                     </div>
                 </>
             ) : (
-                <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 24 }}>
-                    <div style={{ fontSize: 48 }}>🎯</div>
-                    <h2 style={{ fontSize: 32, fontWeight: 800 }}>Time to Plan Today</h2>
-                    <p style={{ opacity: 0.5, maxWidth: 400, textAlign: "center" }}>Use the Auto-Plan engine to find the most efficient route through your day.</p>
-                    <button
-                        onClick={onComplete}
-                        style={{
-                            backgroundColor: "var(--brand-color)",
-                            color: "#fff",
-                            padding: "16px 32px",
-                            borderRadius: 12,
-                            fontWeight: 700,
-                            border: "none",
-                            fontSize: 16
-                        }}
-                    >
-                        Go to Today's View
-                    </button>
+                <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 32, padding: 40 }}>
+                    <div style={{ fontSize: 48 }}>⚡️</div>
+                    <div style={{ textAlign: "center" }}>
+                        <h2 style={{ fontSize: 32, fontWeight: 800, marginBottom: 12 }}>Time to Plan Today</h2>
+                        <p style={{ opacity: 0.5, maxWidth: 450, margin: "0 auto" }}>
+                            Our ML Optimizer has analyzed your focus patterns. Your peak focus today is predicted to be between
+                            <span style={{ fontWeight: 700, color: "var(--brand-color)" }}> 9:00 AM and 11:30 AM</span>.
+                        </p>
+                    </div>
+
+                    {/* Predicted Energy Curve Placeholder */}
+                    <div style={{ width: "100%", maxWidth: 500, height: 120, backgroundColor: "#f8fafc", borderRadius: 20, padding: 24, position: "relative", border: "1px solid var(--border-color)" }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, opacity: 0.4, marginBottom: 16 }}>PREDICTED ENERGY CURVE</div>
+                        <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 40 }}>
+                            {Array.from({ length: 12 }).map((_, i) => {
+                                const val = Math.sin(i / 1.5) * 50 + 50;
+                                return <div key={i} style={{ flex: 1, height: `${val}%`, backgroundColor: "var(--brand-color)", borderRadius: 2, opacity: 0.2 + (val / 100) * 0.5 }} />;
+                            })}
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 9, fontWeight: 700, opacity: 0.3 }}>
+                            <span>8 AM</span>
+                            <span>12 PM</span>
+                            <span>4 PM</span>
+                            <span>8 PM</span>
+                        </div>
+                    </div>
+
+                    <div style={{ display: "flex", gap: 16 }}>
+                        <button
+                            onClick={onComplete}
+                            style={{
+                                backgroundColor: "var(--brand-color)",
+                                color: "#fff",
+                                padding: "16px 32px",
+                                borderRadius: 12,
+                                fontWeight: 700,
+                                border: "none",
+                                fontSize: 16,
+                                boxShadow: "0 10px 15px -3px rgba(147, 51, 234, 0.3)"
+                            }}
+                        >
+                            Generate Auto-Plan
+                        </button>
+                        <button
+                            onClick={onComplete}
+                            style={{
+                                backgroundColor: "transparent",
+                                color: "var(--text-main)",
+                                padding: "16px 32px",
+                                borderRadius: 12,
+                                fontWeight: 700,
+                                border: "1px solid var(--border-color)",
+                                fontSize: 16
+                            }}
+                        >
+                            Manual Plan
+                        </button>
+                    </div>
                 </div>
             )}
         </div>

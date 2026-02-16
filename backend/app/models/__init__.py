@@ -8,3 +8,4 @@ from app.models.integration_event import IntegrationEvent
 from app.models.external_event import ExternalEvent
 from app.models.automation import Automation
 from app.models.automation_run import AutomationRun
+from app.models.project import Project

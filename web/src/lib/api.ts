@@ -52,12 +52,27 @@ export type Task = {
     deleted_at: string | null;
 };
 
-export type TaskList = {
+export interface Project {
+    id: number;
+    user_id: number;
+    name: string;
+    content: string | null;
+    emoji: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface TaskList {
     items: Task[];
     limit: number;
     offset: number;
     total: number;
-};
+}
+
+export interface ProjectList {
+    items: Project[];
+    total: number;
+}
 
 export type AISuggestion = {
     title: string;
@@ -139,7 +154,18 @@ export const api = {
     automationRunAll: () => request<AutomationRun[]>(`/v1/automations/run-all`, { method: "POST" }),
 
     aiSuggest: () => request<AISuggestion[]>(`/v1/ai/suggest`),
-    aiSmartSchedule: () => request<SmartScheduleResponse>(`/v1/ai/smart-schedule`, { method: "POST" }),
+    aiSmartSchedule: () => request<{ items: SmartScheduleItem[] }>("ai/smart-schedule", { method: "POST" }),
+
+    // Projects (Phase 11)
+    projectList: () => request<ProjectList>("projects"),
+    projectGet: (id: number) => request<Project>(`projects/${id}`),
+    projectCreate: (data: Partial<Project>) => request<Project>("projects", { method: "POST", body: JSON.stringify(data) }),
+    projectUpdate: (id: number, data: Partial<Project>) => request<Project>(`projects/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    projectDelete: (id: number) => request<{ status: string }>(`projects/${id}`, { method: "DELETE" }),
+    projectBacklinks: (id: number) => request<Project[]>(`projects/${id}/backlinks`),
+    projectGraphData: () => request<{ nodes: any[], links: any[] }>("projects/graph/data"),
+    semanticSearch: (q: string) => request<{ tasks: any[], projects: any[] }>(`/v1/search/semantic?q=${encodeURIComponent(q)}`),
+
     analyticsStats: () => request<{
         total_tasks: number;
         completed_tasks: number;

@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
 from sqlalchemy.sql import func
+from pgvector.sqlalchemy import Vector
 from app.db import Base
 
 class Task(Base):
@@ -9,6 +10,7 @@ class Task(Base):
     intent_id = Column(Integer, ForeignKey("intents.id", ondelete="SET NULL"), nullable=True, index=True)
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
+    embedding = Column(Vector(384), nullable=True)
     status = Column(String(32), nullable=False, server_default="open")
     priority = Column(String(16), nullable=True)
     due_at = Column(DateTime(timezone=True), nullable=True)
