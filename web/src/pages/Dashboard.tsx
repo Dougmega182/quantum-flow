@@ -20,6 +20,8 @@ import { AiCenterPage } from "./AiCenter";
 import { PlanningWizard } from "./PlanningWizard";
 import { KanbanPage } from "./Kanban";
 import { TimelinePage } from "./Timeline";
+import { TeamWorkloadPage } from "./TeamWorkload";
+import { BlueprintsPage } from "./Blueprints";
 import { ProjectVault } from "./ProjectVault";
 import { GraphView } from "../components/GraphView";
 import { WeeklyReview } from "./WeeklyReview";
@@ -185,6 +187,8 @@ export function Dashboard() {
             case "review": return <WeeklyReview />;
             case "search": return <SemanticSearch />;
             case "timeline": return <TimelinePage />;
+            case "team": return <TeamWorkloadPage />;
+            case "blueprints": return <BlueprintsPage />;
             case "planning": return <PlanningWizard onComplete={() => setTab("today")} />;
             default: return <TasksPage onTaskSelect={onTaskClick} />;
         }

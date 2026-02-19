@@ -34,6 +34,8 @@ export function Sidebar({
         { id: "graph", label: "Project Graph", icon: "🕸️" },
         { id: "search", label: "Semantic Search", icon: "🔍" },
         { id: "planning", label: "Daily Planning", icon: "☀️" },
+        { id: "team", label: "Team", icon: "👥" },
+        { id: "blueprints", label: "Blueprints", icon: "📋" },
     ];
 
     return (

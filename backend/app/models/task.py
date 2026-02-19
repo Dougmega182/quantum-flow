@@ -17,6 +17,7 @@ class Task(Base):
     duration_minutes = Column(Integer, nullable=True)
     parent_id = Column(Integer, ForeignKey("tasks.id", ondelete="CASCADE"), nullable=True, index=True)
     depends_on_id = Column(Integer, ForeignKey("tasks.id", ondelete="SET NULL"), nullable=True, index=True)
+    assigned_to = Column(Integer, ForeignKey("team_members.id", ondelete="SET NULL"), nullable=True, index=True)
     labels = Column(Text, nullable=True) # comma-separated
     tags = Column(Text, nullable=True)   # comma-separated
     energy_level = Column(String(16), nullable=True) # low, medium, high

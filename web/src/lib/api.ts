@@ -223,6 +223,27 @@ export const api = {
     milestoneComplete: (id: number) => request<any>(`/v1/milestones/${id}/complete`, { method: "POST" }),
     milestoneDelete: (id: number) => request<{ status: string }>(`/v1/milestones/${id}`, { method: "DELETE" }),
 
+    // Team (Phase 3A)
+    teamMembers: () => request<any[]>(`/v1/team/members`),
+    teamCreateMember: (body: { name: string; email: string; role?: string; capacity_hours_per_day?: number }) =>
+        request<any>(`/v1/team/members`, { method: "POST", body: JSON.stringify(body) }),
+    teamUpdateMember: (id: number, body: Record<string, any>) =>
+        request<any>(`/v1/team/members/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+    teamDeleteMember: (id: number) => request<{ status: string }>(`/v1/team/members/${id}`, { method: "DELETE" }),
+    teamWorkload: () => request<any[]>(`/v1/team/workload`),
+    teamSuggestAssignments: () => request<{ suggestions: any[]; message: string }>(`/v1/team/suggest-assignments`, { method: "POST" }),
+    teamAssign: (taskId: number, memberId: number) =>
+        request<any>(`/v1/team/assign?task_id=${taskId}&member_id=${memberId}`, { method: "POST" }),
+
+    // Blueprints (Phase 3B)
+    blueprintList: (category?: string) => request<any[]>(`/v1/blueprints${category ? `?category=${category}` : ""}`),
+    blueprintGet: (id: number) => request<any>(`/v1/blueprints/${id}`),
+    blueprintCreate: (body: { title: string; description?: string; category?: string; steps?: any[] }) =>
+        request<any>(`/v1/blueprints`, { method: "POST", body: JSON.stringify(body) }),
+    blueprintInstantiate: (id: number) =>
+        request<{ blueprint: string; tasks_created: number; tasks: any[]; message: string }>(`/v1/blueprints/${id}/instantiate`, { method: "POST" }),
+    blueprintDelete: (id: number) => request<{ status: string }>(`/v1/blueprints/${id}`, { method: "DELETE" }),
+
     // Subtasks
     taskSubtasks: (id: number) => request<TaskList>(`/v1/tasks/${id}/subtasks`),
     taskCreateSubtask: (parentId: number, body: { title: string; description?: string; priority?: string; duration_minutes?: number; energy_level?: string }) =>
@@ -245,6 +266,13 @@ export const api = {
         energy_distribution: Record<string, number>;
         weekly_focus: Record<string, number>;
     }>(`/v1/analytics/stats`),
+    analyticsDeep: () => request<{
+        streaks: { current: number; best: number };
+        velocity: { trend: { date: string; count: number }[]; avg_per_day: number };
+        priority_breakdown: Record<string, number>;
+        avg_completion_hours: number;
+        comparison: { this_week: number; last_week: number; change_pct: number };
+    }>(`/v1/analytics/deep`),
 
     // User Profile
     userMe: () => request<{ id: number; email: string; avatar_url: string | null }>(`/v1/users/me`),
