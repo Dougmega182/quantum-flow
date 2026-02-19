@@ -18,6 +18,8 @@ export function TaskEditor({ task, onClose, onUpdate }: TaskEditorProps) {
     const [energyLevel, setEnergyLevel] = useState(task.energy_level || "medium");
     const [subtasks, setSubtasks] = useState<Task[]>([]);
     const [newSubtask, setNewSubtask] = useState("");
+    const [allTasks, setAllTasks] = useState<Task[]>([]);
+    const [depId, setDepId] = useState<number | null>(task.depends_on_id || null);
 
     useEffect(() => {
         setTitle(task.title);
@@ -27,12 +29,17 @@ export function TaskEditor({ task, onClose, onUpdate }: TaskEditorProps) {
         setDueAt(task.due_at ? task.due_at.split("T")[0] : "");
         setDuration(task.duration_minutes || 30);
         setEnergyLevel(task.energy_level || "medium");
+        setDepId(task.depends_on_id || null);
         refreshSubtasks();
+        // Fetch all open tasks for the dependency picker
+        api.tasksList({ limit: 100 }).then(res => {
+            setAllTasks(res.items.filter(t => t.id !== task.id));
+        }).catch(() => { });
     }, [task]);
 
     async function refreshSubtasks() {
         try {
-            const res = await api.tasksList({ parent_id: task.id });
+            const res = await api.taskSubtasks(task.id);
             setSubtasks(res.items);
         } catch (e) { }
     }
@@ -52,9 +59,8 @@ export function TaskEditor({ task, onClose, onUpdate }: TaskEditorProps) {
 
     const addSubtask = async () => {
         if (!newSubtask.trim()) return;
-        await api.taskCreate({
+        await api.taskCreateSubtask(task.id, {
             title: newSubtask,
-            parent_id: task.id,
             priority: "low"
         });
         setNewSubtask("");
@@ -128,15 +134,24 @@ export function TaskEditor({ task, onClose, onUpdate }: TaskEditorProps) {
                 <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
                     <span style={{ fontSize: 13, opacity: 0.5, width: 80 }}>Depends on</span>
                     <select
-                        value={(task as any).depends_on_id || ""}
+                        value={depId || ""}
                         onChange={async (e) => {
-                            await api.taskUpdate(task.id, { depends_on_id: e.target.value ? Number(e.target.value) : null } as any);
-                            onUpdate();
+                            const val = e.target.value ? Number(e.target.value) : null;
+                            setDepId(val);
+                            try {
+                                await api.taskUpdate(task.id, { depends_on_id: val });
+                                onUpdate();
+                            } catch (err: any) {
+                                alert(err?.message || "Failed to set dependency");
+                                setDepId(task.depends_on_id || null);
+                            }
                         }}
                         style={{ border: "none", padding: "6px 10px", backgroundColor: "#f3f4f6", borderRadius: 6, flex: 1, fontSize: 13, outline: "none" }}
                     >
                         <option value="">No dependency</option>
-                        {/* In a real app, we'd fetch other tasks here. For now, we'll assume it's set manually or by AI. */}
+                        {allTasks.filter(t => t.status !== "done").map(t => (
+                            <option key={t.id} value={t.id}>{t.title}</option>
+                        ))}
                     </select>
                 </div>
             </div>

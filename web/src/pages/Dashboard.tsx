@@ -12,7 +12,7 @@ import { CommandBar } from "../components/CommandBar";
 import { FocusModePage } from "./FocusMode";
 import { CalendarView } from "./Calendar";
 import { HelpPage } from "./Help";
-import { api, type Task, type SmartScheduleItem } from "../lib/api";
+import { api, type Task, type AutoPlanItem, type Nudge } from "../lib/api";
 import { useEffect } from "react";
 import { Header } from "../components/Header";
 import { AiAssistant } from "../components/AiAssistant";
@@ -28,7 +28,9 @@ export function Dashboard() {
     const [activeTab, setTab] = useState<any>("today");
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     const [showCommandBar, setShowCommandBar] = useState(false);
-    const [scheduledItems, setScheduledItems] = useState<SmartScheduleItem[]>([]);
+    const [scheduledItems, setScheduledItems] = useState<AutoPlanItem[]>([]);
+    const [planMessage, setPlanMessage] = useState("");
+    const [nudges, setNudges] = useState<Nudge[]>([]);
     const [isPlanning, setIsPlanning] = useState(false);
 
     // Custom Lists State (Still in localStorage for now, but Projects moved to DB)
@@ -60,6 +62,8 @@ export function Dashboard() {
 
     useEffect(() => {
         refreshProjects();
+        // Fetch nudges on load
+        api.aiNudges().then(setNudges).catch(() => { });
     }, []);
 
     useEffect(() => {
@@ -126,12 +130,22 @@ export function Dashboard() {
     const handleAutoPlan = async () => {
         setIsPlanning(true);
         try {
-            const res = await api.aiSmartSchedule();
+            const res = await api.aiAutoPlan();
             setScheduledItems(res.items);
+            setPlanMessage(res.message);
         } catch (e) {
             console.error("Planning failed", e);
         } finally {
             setIsPlanning(false);
+        }
+    };
+
+    const handleReschedule = async () => {
+        try {
+            const res = await api.aiReschedule();
+            setPlanMessage(res.message);
+        } catch (e) {
+            console.error("Reschedule failed", e);
         }
     };
 
@@ -295,25 +309,71 @@ export function Dashboard() {
                     ) : (
                         <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-                                <h3 style={{ fontSize: 15, fontWeight: 800 }}>Schedule — Feb 16</h3>
-                                <button
-                                    onClick={handleAutoPlan}
-                                    disabled={isPlanning}
-                                    style={{
-                                        fontSize: 11,
-                                        fontWeight: 700,
-                                        padding: "4px 10px",
-                                        borderRadius: 6,
-                                        border: "none",
-                                        backgroundColor: "var(--brand-color)",
-                                        color: "#fff",
-                                        cursor: "pointer",
-                                        opacity: isPlanning ? 0.5 : 1
-                                    }}
-                                >
-                                    {isPlanning ? "Planning..." : "Auto Plan"}
-                                </button>
+                                <h3 style={{ fontSize: 15, fontWeight: 800 }}>Schedule</h3>
+                                <div style={{ display: "flex", gap: 6 }}>
+                                    <button
+                                        onClick={handleReschedule}
+                                        style={{
+                                            fontSize: 11,
+                                            fontWeight: 700,
+                                            padding: "4px 10px",
+                                            borderRadius: 6,
+                                            border: "1px solid var(--border-color)",
+                                            backgroundColor: "transparent",
+                                            color: "var(--text-primary)",
+                                            cursor: "pointer"
+                                        }}
+                                    >
+                                        🔄 Reschedule
+                                    </button>
+                                    <button
+                                        onClick={handleAutoPlan}
+                                        disabled={isPlanning}
+                                        style={{
+                                            fontSize: 11,
+                                            fontWeight: 700,
+                                            padding: "4px 10px",
+                                            borderRadius: 6,
+                                            border: "none",
+                                            backgroundColor: "var(--brand-color)",
+                                            color: "#fff",
+                                            cursor: "pointer",
+                                            opacity: isPlanning ? 0.5 : 1
+                                        }}
+                                    >
+                                        {isPlanning ? "Planning..." : "⚡ Auto Plan"}
+                                    </button>
+                                </div>
                             </div>
+
+                            {planMessage && (
+                                <div style={{ fontSize: 12, padding: "8px 12px", backgroundColor: "#f0fdf4", borderRadius: 8, marginBottom: 12, color: "#166534", fontWeight: 600 }}>
+                                    {planMessage}
+                                </div>
+                            )}
+
+                            {/* Nudge Notifications */}
+                            {nudges.length > 0 && (
+                                <div style={{ marginBottom: 16, display: "flex", flexDirection: "column", gap: 6 }}>
+                                    {nudges.slice(0, 3).map((n, i) => (
+                                        <div key={i} style={{
+                                            padding: "8px 12px",
+                                            borderRadius: 8,
+                                            fontSize: 12,
+                                            fontWeight: 600,
+                                            backgroundColor: n.severity === "high" ? "#fef2f2" : n.severity === "medium" ? "#fffbeb" : "#f0f9ff",
+                                            color: n.severity === "high" ? "#991b1b" : n.severity === "medium" ? "#92400e" : "#1e40af",
+                                            borderLeft: `3px solid ${n.severity === "high" ? "#ef4444" : n.severity === "medium" ? "#f59e0b" : "#3b82f6"}`,
+                                            display: "flex",
+                                            justifyContent: "space-between",
+                                            alignItems: "center"
+                                        }}>
+                                            <span>{n.message}</span>
+                                            <button onClick={() => setNudges(nudges.filter((_, idx) => idx !== i))} style={{ background: "none", border: "none", cursor: "pointer", opacity: 0.5, fontSize: 14 }}>✕</button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
 
                             {/* Integrated Planning View (Side-by-side) */}
                             <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 0, position: "relative", overflowY: "auto" }}>
@@ -355,7 +415,7 @@ export function Dashboard() {
                                 })}
 
                                 {/* Render Auto-Planned Items */}
-                                {scheduledItems.map((item, idx) => {
+                                {scheduledItems.map((item) => {
                                     const start = new Date(item.start_time);
                                     const hour = start.getHours();
                                     const minutes = start.getMinutes();
@@ -369,8 +429,8 @@ export function Dashboard() {
                                             left: 40,
                                             right: 0,
                                             height: height,
-                                            backgroundColor: idx % 2 === 0 ? "var(--brand-light)" : "#f0f7ff",
-                                            borderLeft: `4px solid ${idx % 2 === 0 ? "var(--brand-color)" : "#3b82f6"}`,
+                                            backgroundColor: item.block_label ? "var(--brand-light)" : "#f0f7ff",
+                                            borderLeft: `4px solid ${item.block_label ? "var(--brand-color)" : "#3b82f6"}`,
                                             borderRadius: "0 8px 8px 0",
                                             padding: "8px 12px",
                                             fontSize: 12,
@@ -383,12 +443,15 @@ export function Dashboard() {
                                                 <div style={{ opacity: 0.6, fontSize: 10 }}>
                                                     {start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                 </div>
-                                                {(item as any).rationale && (
+                                                {item.rationale && (
                                                     <div style={{ fontSize: 9, fontWeight: 700, color: "var(--brand-color)", backgroundColor: "rgba(255,255,255,0.5)", padding: "1px 4px", borderRadius: 4 }}>
-                                                        ✨ {(item as any).rationale}
+                                                        {item.rationale}
                                                     </div>
                                                 )}
                                             </div>
+                                            {item.block_label && (
+                                                <div style={{ fontSize: 9, opacity: 0.5, marginTop: 2 }}>📦 {item.block_label}</div>
+                                            )}
                                         </div>
                                     );
                                 })}

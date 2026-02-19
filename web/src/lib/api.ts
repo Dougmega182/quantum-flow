@@ -95,6 +95,43 @@ export type SmartScheduleResponse = {
     message: string;
 };
 
+export type AutoPlanItem = {
+    task_id: number;
+    title: string;
+    start_time: string;
+    end_time: string;
+    duration_minutes: number;
+    block_label: string | null;
+    rationale: string | null;
+};
+
+export type AutoPlanResponse = {
+    items: AutoPlanItem[];
+    message: string;
+    total_focus_minutes: number;
+};
+
+export type RescheduleItem = {
+    task_id: number;
+    title: string;
+    old_due: string | null;
+    new_due: string;
+    rationale: string;
+};
+
+export type RescheduleResponse = {
+    items: RescheduleItem[];
+    message: string;
+};
+
+export type Nudge = {
+    type: string;
+    message: string;
+    task_id: number | null;
+    action_type: string;
+    severity: string;
+};
+
 export type TaskTemplate = {
     id: number;
     user_id: number;
@@ -154,7 +191,15 @@ export const api = {
     automationRunAll: () => request<AutomationRun[]>(`/v1/automations/run-all`, { method: "POST" }),
 
     aiSuggest: () => request<AISuggestion[]>(`/v1/ai/suggest`),
-    aiSmartSchedule: () => request<{ items: SmartScheduleItem[] }>("ai/smart-schedule", { method: "POST" }),
+    aiSmartSchedule: () => request<{ items: SmartScheduleItem[] }>("/v1/ai/smart-schedule", { method: "POST" }),
+    aiAutoPlan: () => request<AutoPlanResponse>(`/v1/ai/auto-plan`, { method: "POST" }),
+    aiReschedule: () => request<RescheduleResponse>(`/v1/ai/reschedule`, { method: "POST" }),
+    aiNudges: () => request<Nudge[]>(`/v1/ai/nudges`),
+
+    // Subtasks
+    taskSubtasks: (id: number) => request<TaskList>(`/v1/tasks/${id}/subtasks`),
+    taskCreateSubtask: (parentId: number, body: { title: string; description?: string; priority?: string; duration_minutes?: number; energy_level?: string }) =>
+        request<Task>(`/v1/tasks/${parentId}/subtasks`, { method: "POST", body: JSON.stringify(body) }),
 
     // Projects (Phase 11)
     projectList: () => request<ProjectList>("projects"),

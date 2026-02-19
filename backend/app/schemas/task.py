@@ -12,6 +12,7 @@ class TaskBase(BaseModel):
     due_at: Optional[datetime] = None
     duration_minutes: Optional[int] = None
     parent_id: Optional[int] = None
+    depends_on_id: Optional[int] = None
     energy_level: Optional[str] = None
 
 class TaskCreate(TaskBase):
@@ -27,8 +28,17 @@ class TaskUpdate(BaseModel):
     due_at: Optional[datetime] = None
     duration_minutes: Optional[int] = None
     parent_id: Optional[int] = None
+    depends_on_id: Optional[int] = None
     energy_level: Optional[str] = None
     status: Optional[str] = None  # open, in_progress, done
+
+class SubtaskCreate(BaseModel):
+    """Minimal schema for creating a subtask — parent_id is set from the URL."""
+    title: constr(strip_whitespace=True, min_length=1, max_length=255)
+    description: Optional[str] = None
+    priority: Optional[str] = None
+    duration_minutes: Optional[int] = None
+    energy_level: Optional[str] = None
 
 class TaskOut(BaseModel):
     id: int
@@ -43,6 +53,7 @@ class TaskOut(BaseModel):
     due_at: datetime | None
     duration_minutes: int | None
     parent_id: int | None
+    depends_on_id: int | None
     energy_level: str | None
     created_at: datetime
     updated_at: datetime
