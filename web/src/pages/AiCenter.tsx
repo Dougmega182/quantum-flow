@@ -64,6 +64,16 @@ export function AiCenterPage() {
                 </div>
             </AiSection>
 
+            {/* Energy Profile (Phase 2B) */}
+            <AiSection
+                title="Energy Profile"
+                icon="⚡"
+                description="Your 24-hour productivity heatmap — learned from completed tasks"
+                enabled
+            >
+                <EnergyHeatmap />
+            </AiSection>
+
             {/* Profile Settings */}
             <AiSection
                 title="Profile Settings"
@@ -125,6 +135,98 @@ function ProfileSettings() {
                 </button>
             </div>
         </AiCard>
+    );
+}
+
+function EnergyHeatmap() {
+    const [heatmap, setHeatmap] = useState<{ hour: number; label: string; score: number; samples: number }[]>([]);
+    const [peakHours, setPeakHours] = useState<number[]>([]);
+    const [learning, setLearning] = useState(false);
+
+    const loadProfile = async () => {
+        try {
+            const res = await api.aiEnergyProfile();
+            setHeatmap(res.heatmap);
+            setPeakHours(res.peak_hours);
+        } catch (e) {
+            console.error("Failed to load energy profile", e);
+        }
+    };
+
+    useEffect(() => { loadProfile(); }, []);
+
+    const handleLearn = async () => {
+        setLearning(true);
+        try {
+            await api.aiLearnEnergy();
+            await loadProfile();
+        } catch (e) {
+            console.error("Learning failed", e);
+        } finally {
+            setLearning(false);
+        }
+    };
+
+    const maxScore = Math.max(...heatmap.map(h => h.score), 0.01);
+
+    return (
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                <span style={{ fontSize: 13, fontWeight: 600 }}>Peak hours:</span>
+                {peakHours.length === 0 && <span style={{ fontSize: 12, opacity: 0.5 }}>Not enough data yet</span>}
+                {peakHours.map(h => (
+                    <span key={h} style={{
+                        fontSize: 11, fontWeight: 800,
+                        padding: "3px 8px", borderRadius: 6,
+                        backgroundColor: "#f5f3ff", color: "#7c3aed",
+                    }}>{h.toString().padStart(2, "0")}:00</span>
+                ))}
+                <button
+                    onClick={handleLearn}
+                    disabled={learning}
+                    style={{
+                        marginLeft: "auto",
+                        padding: "6px 14px",
+                        borderRadius: 8,
+                        backgroundColor: learning ? "#e2e8f0" : "#7c3aed",
+                        color: learning ? "#64748b" : "#fff",
+                        border: "none",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        cursor: learning ? "default" : "pointer",
+                    }}
+                >
+                    {learning ? "Learning..." : "🧠 Learn Energy"}
+                </button>
+            </div>
+
+            {/* 24-hour bar chart */}
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 100, padding: "0 4px" }}>
+                {heatmap.map(h => {
+                    const height = Math.max(4, (h.score / maxScore) * 88);
+                    const isPeak = peakHours.includes(h.hour);
+                    return (
+                        <div key={h.hour} style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1, gap: 2 }}
+                            title={`${h.label}: ${(h.score * 100).toFixed(0)}% (${h.samples} completions)`}
+                        >
+                            <div style={{
+                                width: "100%",
+                                height,
+                                borderRadius: "4px 4px 0 0",
+                                backgroundColor: isPeak ? "#7c3aed" : h.score > 0 ? "#c4b5fd" : "#e2e8f0",
+                                transition: "height 0.3s ease",
+                            }} />
+                            <span style={{
+                                fontSize: 8, fontWeight: isPeak ? 800 : 500,
+                                color: isPeak ? "#7c3aed" : "#94a3b8",
+                            }}>
+                                {h.hour % 3 === 0 ? h.hour.toString().padStart(2, "0") : ""}
+                            </span>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
     );
 }
 

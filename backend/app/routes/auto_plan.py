@@ -24,7 +24,21 @@ def get_db():
 
 
 def _detect_peak_hours(db: Session) -> set[int]:
-    """Detect peak productivity hours from the last 30 days of completions."""
+    """Detect peak productivity hours — uses persisted EnergyProfile if available, else raw completions."""
+    from app.models.energy_profile import EnergyProfile
+
+    # Prefer persisted profile
+    profiles = (
+        db.query(EnergyProfile)
+        .filter(EnergyProfile.user_id == DEFAULT_USER_ID, EnergyProfile.productivity_score > 0)
+        .all()
+    )
+    if profiles:
+        max_score = max(p.productivity_score for p in profiles)
+        peak = {p.hour for p in profiles if p.productivity_score >= max_score * 0.7}
+        return peak if peak else {9, 10, 11, 12}
+
+    # Fallback: compute from raw completions
     last_month = datetime.utcnow() - timedelta(days=30)
     hourly_stats = (
         db.query(
@@ -88,6 +102,16 @@ def _cluster_by_label(tasks):
 @router.post("/auto-plan", response_model=AutoPlanResponse)
 def auto_plan(db: Session = Depends(get_db)):
     """One-click 'Auto Plan My Day' — generates a full daily schedule."""
+    items, message, total_focus = _auto_plan_logic(db)
+    return AutoPlanResponse(
+        items=items,
+        message=message,
+        total_focus_minutes=total_focus,
+    )
+
+
+def _auto_plan_logic(db: Session) -> tuple[list[AutoPlanItem], str, int]:
+    """Core scheduling logic, reusable by chat endpoint."""
     now = datetime.now(timezone.utc)
     start_of_day = datetime(now.year, now.month, now.day, 9, 0, tzinfo=timezone.utc)
     end_of_day = datetime(now.year, now.month, now.day, 18, 0, tzinfo=timezone.utc)
@@ -103,14 +127,9 @@ def auto_plan(db: Session = Depends(get_db)):
 
     peak_hours = _detect_peak_hours(db)
     tasks = _get_open_tasks(db)
-
-    # Topological sort to respect dependencies
     tasks = _topological_sort(tasks)
-
-    # Cluster by label for focus blocks
     clusters = _cluster_by_label(tasks)
 
-    # Sort clusters: put high-energy clusters into peak hours
     high_energy_clusters = []
     other_clusters = []
     for label, cluster_tasks in clusters.items():
@@ -120,19 +139,16 @@ def auto_plan(db: Session = Depends(get_db)):
         else:
             other_clusters.append((label, cluster_tasks))
 
-    # Schedule high-energy first during peaks, then others
     ordered_clusters = high_energy_clusters + other_clusters
 
     scheduled_items: list[AutoPlanItem] = []
     total_focus = 0
 
     for label, cluster_tasks in ordered_clusters:
-        # Sort within cluster by priority
         cluster_tasks.sort(
             key=lambda t: PRIORITY_MAP.get(t.priority or "low", 1), reverse=True
         )
 
-        # For high-energy clusters, try to align with peak hours
         is_high_cluster = any((t.energy_level or "").lower() == "high" for t in cluster_tasks)
         if is_high_cluster and current_time.hour not in peak_hours:
             lookahead = current_time
@@ -176,17 +192,14 @@ def auto_plan(db: Session = Depends(get_db)):
                 )
             )
             total_focus += duration
-            current_time = end_time + timedelta(minutes=5)  # 5-min buffer
+            current_time = end_time + timedelta(minutes=5)
 
-        # Add 10-min break between focus blocks
         if current_time < end_of_day:
             current_time += timedelta(minutes=10)
 
-    return AutoPlanResponse(
-        items=scheduled_items,
-        message=f"Auto-planned {len(scheduled_items)} tasks into focus blocks ({total_focus} min of deep work).",
-        total_focus_minutes=total_focus,
-    )
+    message = f"Auto-planned {len(scheduled_items)} tasks into focus blocks ({total_focus} min of deep work)."
+    return scheduled_items, message, total_focus
+
 
 
 @router.post("/reschedule", response_model=RescheduleResponse)

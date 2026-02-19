@@ -132,6 +132,19 @@ export type Nudge = {
     severity: string;
 };
 
+export type ChatAction = {
+    type: string;
+    task_id?: number | null;
+    detail?: string | null;
+};
+
+export type ChatResponse = {
+    reply: string;
+    actions: ChatAction[];
+    task_card?: { id: number; title: string; due_at?: string | null; status?: string; duration_minutes?: number } | null;
+    schedule_preview?: { task_id: number; title: string; start_time: string; end_time: string }[] | null;
+};
+
 export type TaskTemplate = {
     id: number;
     user_id: number;
@@ -195,6 +208,20 @@ export const api = {
     aiAutoPlan: () => request<AutoPlanResponse>(`/v1/ai/auto-plan`, { method: "POST" }),
     aiReschedule: () => request<RescheduleResponse>(`/v1/ai/reschedule`, { method: "POST" }),
     aiNudges: () => request<Nudge[]>(`/v1/ai/nudges`),
+    aiChat: (message: string) => request<ChatResponse>(`/v1/ai/chat`, { method: "POST", body: JSON.stringify({ message }) }),
+
+    // Energy Profile (Phase 2B)
+    aiLearnEnergy: () => request<{ message: string; updated: number }>(`/v1/ai/learn-energy`, { method: "POST" }),
+    aiEnergyProfile: () => request<{ heatmap: { hour: number; label: string; score: number; samples: number }[]; peak_hours: number[]; total_samples: number }>(`/v1/ai/energy-profile`),
+
+    // Milestones (Phase 2C)
+    milestoneList: (projectId?: number) => request<any[]>(`/v1/milestones${projectId ? `?project_id=${projectId}` : ""}`),
+    milestoneCreate: (body: { project_id: number; title: string; due_at?: string }) =>
+        request<any>(`/v1/milestones`, { method: "POST", body: JSON.stringify(body) }),
+    milestoneUpdate: (id: number, body: { title?: string; due_at?: string }) =>
+        request<any>(`/v1/milestones/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+    milestoneComplete: (id: number) => request<any>(`/v1/milestones/${id}/complete`, { method: "POST" }),
+    milestoneDelete: (id: number) => request<{ status: string }>(`/v1/milestones/${id}`, { method: "DELETE" }),
 
     // Subtasks
     taskSubtasks: (id: number) => request<TaskList>(`/v1/tasks/${id}/subtasks`),

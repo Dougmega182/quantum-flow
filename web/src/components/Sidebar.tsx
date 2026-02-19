@@ -29,6 +29,7 @@ export function Sidebar({
         { id: "all", label: "All Tasks", icon: "📋" },
         { id: "kanban", label: "Kanban Board", icon: "🍱" },
         { id: "calendar", label: "Calendar", icon: "📅" },
+        { id: "timeline", label: "Timeline", icon: "📊" },
         { id: "review", label: "Weekly Review", icon: "📈" },
         { id: "graph", label: "Project Graph", icon: "🕸️" },
         { id: "search", label: "Semantic Search", icon: "🔍" },

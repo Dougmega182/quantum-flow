@@ -3,7 +3,8 @@ import time
 from fastapi import FastAPI, Depends, Header, HTTPException, status, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes import intents, tasks, task_templates, recurrence, integrations, automations
-from app.routes import ai, auto_plan, nudges
+from app.routes import ai, auto_plan, nudges, chat, energy
+from app.routes import milestones as milestones_route
 from fastapi import Request, Header, HTTPException
 from app.config import settings
 from app.routes import google_calendar, analytics, ingest, users, projects, search
@@ -70,3 +71,6 @@ app.include_router(search.router, dependencies=[Depends(require_api_key)])
 app.include_router(ai.router, dependencies=[Depends(require_api_key)])
 app.include_router(auto_plan.router, dependencies=[Depends(require_api_key)])
 app.include_router(nudges.router, dependencies=[Depends(require_api_key)])
+app.include_router(chat.router, dependencies=[Depends(require_api_key)])
+app.include_router(energy.router, dependencies=[Depends(require_api_key)])
+app.include_router(milestones_route.router, dependencies=[Depends(require_api_key)])

@@ -47,36 +47,68 @@ export function AiAssistant() {
         }
     }, [messages, isOpen]);
 
-    const handleSend = () => {
-        if (!input.trim()) return;
+    const [sending, setSending] = useState(false);
+
+    const handleSend = async () => {
+        if (!input.trim() || sending) return;
         const userMsg: Message = { id: Date.now().toString(), role: "user", content: input };
         setMessages(prev => [...prev, userMsg]);
+        const msg = input;
         setInput("");
+        setSending(true);
 
-        // Simulate AI response
-        setTimeout(() => {
-            if (input.toLowerCase().includes("block")) {
+        try {
+            const res = await api.aiChat(msg);
+
+            // If the response includes a task card, render it
+            if (res.task_card) {
                 setMessages(prev => [...prev, {
                     id: (Date.now() + 1).toString(),
                     role: "assistant",
                     content: "",
                     type: "task_card",
-                    taskData: { title: "Deep-work time", time: "Tomorrow 9:00 AM", duration: "30m" }
-                }, {
-                    id: (Date.now() + 2).toString(),
-                    role: "assistant",
-                    content: "I've blocked 30 minutes for \"Deep-work time\" every weekday at 9:00 AM, starting tomorrow, October 2nd, 2025.",
-                    type: "text"
-                }]);
-            } else {
-                setMessages(prev => [...prev, {
-                    id: (Date.now() + 1).toString(),
-                    role: "assistant",
-                    content: "I'm on it! I can help you schedule that or find the right time.",
-                    type: "text"
+                    taskData: {
+                        title: res.task_card!.title,
+                        time: res.task_card!.due_at ? new Date(res.task_card!.due_at).toLocaleString() : "No due date",
+                        duration: res.task_card!.duration_minutes ? `${res.task_card!.duration_minutes}m` : "",
+                    }
                 }]);
             }
-        }, 600);
+
+            // Schedule preview as a list of task cards
+            if (res.schedule_preview && res.schedule_preview.length > 0) {
+                for (const item of res.schedule_preview.slice(0, 5)) {
+                    setMessages(prev => [...prev, {
+                        id: (Date.now() + Math.random()).toString(),
+                        role: "assistant",
+                        content: "",
+                        type: "task_card",
+                        taskData: {
+                            title: item.title,
+                            time: new Date(item.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                            duration: `→ ${new Date(item.end_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`,
+                        }
+                    }]);
+                }
+            }
+
+            // Main reply text
+            setMessages(prev => [...prev, {
+                id: (Date.now() + 2).toString(),
+                role: "assistant",
+                content: res.reply,
+                type: "text"
+            }]);
+        } catch (e) {
+            setMessages(prev => [...prev, {
+                id: (Date.now() + 1).toString(),
+                role: "assistant",
+                content: "⚠️ Something went wrong. Please try again.",
+                type: "text"
+            }]);
+        } finally {
+            setSending(false);
+        }
     };
 
     return (
