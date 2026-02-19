@@ -4,8 +4,12 @@ __pycache__/
 .venv/
 env/
 
-# Env
+# Env (prevent secret leakage)
 .env
+.env.*
+*.env
+backend/.env
+backend/.env.*
 
 # Docker
 pgdata/
@@ -18,13 +22,6 @@ pgdata/
 # OS
 .DS_Store
 Thumbs.db
-**/__pycache__/
-**/*.pyc
 backup*.sql
 node_modules/
 dist/
-
-backend/.env.prod
-backend/.env
-backend/.env
-backend/.env.prod
