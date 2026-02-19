@@ -1,8 +1,9 @@
-"""Conversational Planning Assistant — Phase 2A.
+"""Conversational Planning Assistant — Phase 2A + 4C enhancements.
 
 POST /v1/ai/chat  →  Parse natural-language intent, execute action, return structured reply.
 """
 import re
+import json
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -11,6 +12,8 @@ from sqlalchemy.orm import Session
 
 from app.db import SessionLocal
 from app import models
+from app.models.team_member import TeamMember
+from app.models.workflow_blueprint import WorkflowBlueprint
 from app.schemas.chat import ChatRequest, ChatResponse, ChatAction
 from app.utils.nlp import parse_task_nlp
 
@@ -51,10 +54,44 @@ _COMPLETE_PATTERNS = [
     r"(?:complete|finish|done|mark done|check off)\s+(.+)",
 ]
 
+# Phase 4C: New intents
+_ASSIGN_PATTERNS = [
+    r"(?:assign|give|hand)\s+(?:task\s+)?[\"']?(.+?)[\"']?\s+to\s+(.+)",
+    r"(?:assign)\s+(.+?)\s+to\s+(.+)",
+]
+
+_BLUEPRINT_PATTERNS = [
+    r"(?:use|run|start|apply|instantiate)\s+(?:the\s+)?(?:blueprint|template|workflow)\s*(?:for|:)?\s*(.+)",
+    r"(?:use|run|start|apply)\s+(.+?)\s+(?:blueprint|template|workflow)",
+]
+
+_PRIORITY_PATTERNS = [
+    r"(?:set|change|make|mark)\s+(?:task\s+)?[\"']?(.+?)[\"']?\s+(?:to|as)\s+(high|medium|low)\s*(?:priority)?",
+    r"(?:set|change)\s+priority\s+(?:of|for)\s+[\"']?(.+?)[\"']?\s+to\s+(high|medium|low)",
+]
+
 
 def _detect_intent(msg: str) -> tuple[str, Optional[str]]:
     """Return (intent, extracted_detail)."""
     lower = msg.lower().strip()
+
+    # Phase 4C: Assign (check before create to avoid conflicts)
+    for pat in _ASSIGN_PATTERNS:
+        m = re.search(pat, lower)
+        if m:
+            return "assign_task", f"{m.group(1).strip()}|||{m.group(2).strip()}"
+
+    # Phase 4C: Blueprint
+    for pat in _BLUEPRINT_PATTERNS:
+        m = re.search(pat, lower)
+        if m:
+            return "use_blueprint", m.group(1).strip()
+
+    # Phase 4C: Priority
+    for pat in _PRIORITY_PATTERNS:
+        m = re.search(pat, lower)
+        if m:
+            return "set_priority", f"{m.group(1).strip()}|||{m.group(2).strip()}"
 
     for pat in _CREATE_PATTERNS:
         m = re.search(pat, lower)
@@ -85,21 +122,62 @@ def _detect_intent(msg: str) -> tuple[str, Optional[str]]:
 
 # ── Action Handlers ───────────────────────────────────────────────
 
+def _extract_attrs(detail: str) -> dict:
+    """Phase 4C: Extract priority, energy, duration from natural language."""
+    attrs: dict = {}
+    lower = detail.lower()
+
+    # Priority
+    prio_match = re.search(r"\b(high|medium|low)\s+priority\b", lower)
+    if prio_match:
+        attrs["priority"] = prio_match.group(1)
+        detail = re.sub(r"\b(high|medium|low)\s+priority\b", "", detail, flags=re.IGNORECASE).strip()
+
+    # Energy
+    energy_match = re.search(r"\b(high|medium|low)\s+energy\b", lower)
+    if energy_match:
+        attrs["energy_level"] = energy_match.group(1)
+        detail = re.sub(r"\b(high|medium|low)\s+energy\b", "", detail, flags=re.IGNORECASE).strip()
+
+    # Duration
+    dur_match = re.search(r"(\d+)\s*(?:min|minutes|mins)", lower)
+    if dur_match:
+        attrs["duration_minutes"] = int(dur_match.group(1))
+        detail = re.sub(r"\d+\s*(?:min|minutes|mins)", "", detail, flags=re.IGNORECASE).strip()
+
+    attrs["_cleaned"] = detail
+    return attrs
+
+
 def _handle_create(detail: str, db: Session) -> ChatResponse:
-    title, due_at = parse_task_nlp(detail)
+    attrs = _extract_attrs(detail)
+    title, due_at = parse_task_nlp(attrs["_cleaned"])
     task = models.Task(
         user_id=DEFAULT_USER_ID,
         title=title,
         due_at=due_at,
         status="open",
+        priority=attrs.get("priority"),
+        energy_level=attrs.get("energy_level"),
+        duration_minutes=attrs.get("duration_minutes"),
     )
     db.add(task)
     db.commit()
     db.refresh(task)
+
+    extras = []
+    if task.priority:
+        extras.append(f"{task.priority} priority")
+    if task.energy_level:
+        extras.append(f"{task.energy_level} energy")
+    if task.duration_minutes:
+        extras.append(f"{task.duration_minutes}min")
+    extra_str = f" ({', '.join(extras)})" if extras else ""
+
     return ChatResponse(
         reply=f"✅ Created task **\"{task.title}\"**"
               + (f" due {task.due_at.strftime('%b %d')}" if task.due_at else "")
-              + ".",
+              + extra_str + ".",
         actions=[ChatAction(type="created_task", task_id=task.id, detail=task.title)],
         task_card={
             "id": task.id,
@@ -245,6 +323,105 @@ def _handle_reschedule(db: Session) -> ChatResponse:
     )
 
 
+# ── Phase 4C: New Handlers ────────────────────────────────────────
+
+def _handle_assign(detail: str, db: Session) -> ChatResponse:
+    parts = detail.split("|||")
+    if len(parts) != 2:
+        return ChatResponse(reply="❌ I couldn't parse the assignment. Try: _\"assign review PR to Alice\"_")
+
+    task_name, member_name = parts
+    # Find task
+    task = (
+        db.query(models.Task)
+        .filter(
+            models.Task.user_id == DEFAULT_USER_ID,
+            models.Task.deleted_at.is_(None),
+            models.Task.status != "done",
+            models.Task.title.ilike(f"%{task_name}%"),
+        )
+        .first()
+    )
+    if not task:
+        return ChatResponse(reply=f"❌ Couldn't find an open task matching \"{task_name}\".")
+
+    # Find member
+    member = db.query(TeamMember).filter(TeamMember.name.ilike(f"%{member_name}%")).first()
+    if not member:
+        return ChatResponse(reply=f"❌ Couldn't find a team member matching \"{member_name}\".")
+
+    task.assigned_to = member.id
+    db.commit()
+    return ChatResponse(
+        reply=f"✅ Assigned **\"{task.title}\"** to **{member.name}**.",
+        actions=[ChatAction(type="assigned", task_id=task.id, detail=f"{member.name}")],
+    )
+
+
+def _handle_blueprint(detail: str, db: Session) -> ChatResponse:
+    bp = (
+        db.query(WorkflowBlueprint)
+        .filter(WorkflowBlueprint.title.ilike(f"%{detail}%"))
+        .first()
+    )
+    if not bp:
+        return ChatResponse(reply=f"❌ Couldn't find a blueprint matching \"{detail}\".")
+
+    steps = json.loads(bp.steps_json)
+    order_to_task_id: dict[int, int] = {}
+    created = []
+
+    for step in sorted(steps, key=lambda s: s.get("order", 0)):
+        depends_on_step = step.get("depends_on_step")
+        parent_task_id = order_to_task_id.get(depends_on_step) if depends_on_step else None
+        t = models.Task(
+            user_id=DEFAULT_USER_ID,
+            title=step.get("title", "Untitled"),
+            duration_minutes=step.get("duration_minutes", 30),
+            energy_level=step.get("energy_level", "medium"),
+            depends_on_id=parent_task_id,
+            status="open",
+        )
+        db.add(t)
+        db.flush()
+        order_to_task_id[step["order"]] = t.id
+        created.append(t.title)
+    db.commit()
+
+    bullet_list = "\n".join(f"• {c}" for c in created[:5])
+    return ChatResponse(
+        reply=f"📋 Instantiated **\"{bp.title}\"** — created {len(created)} tasks:\n{bullet_list}",
+        actions=[ChatAction(type="blueprint_used", detail=bp.title)],
+    )
+
+
+def _handle_priority(detail: str, db: Session) -> ChatResponse:
+    parts = detail.split("|||")
+    if len(parts) != 2:
+        return ChatResponse(reply="❌ Try: _\"set review PR to high priority\"_")
+
+    task_name, priority = parts
+    task = (
+        db.query(models.Task)
+        .filter(
+            models.Task.user_id == DEFAULT_USER_ID,
+            models.Task.deleted_at.is_(None),
+            models.Task.status != "done",
+            models.Task.title.ilike(f"%{task_name}%"),
+        )
+        .first()
+    )
+    if not task:
+        return ChatResponse(reply=f"❌ Couldn't find an open task matching \"{task_name}\".")
+
+    task.priority = priority
+    db.commit()
+    return ChatResponse(
+        reply=f"✅ Set **\"{task.title}\"** to **{priority}** priority.",
+        actions=[ChatAction(type="priority_set", task_id=task.id, detail=priority)],
+    )
+
+
 # ── Main Endpoint ─────────────────────────────────────────────────
 
 @router.post("/chat", response_model=ChatResponse)
@@ -261,13 +438,21 @@ def chat(req: ChatRequest, db: Session = Depends(get_db)):
         return _handle_schedule(detail, db)
     elif intent == "reschedule":
         return _handle_reschedule(db)
+    elif intent == "assign_task" and detail:
+        return _handle_assign(detail, db)
+    elif intent == "use_blueprint" and detail:
+        return _handle_blueprint(detail, db)
+    elif intent == "set_priority" and detail:
+        return _handle_priority(detail, db)
     else:
-        # General / unrecognized — provide help
         return ChatResponse(
             reply="👋 I can help you with:\n"
                   "• **Create tasks** — _\"Add a task to review PR\"_\n"
                   "• **Complete tasks** — _\"Mark done review PR\"_\n"
                   "• **Check status** — _\"Show my tasks\"_\n"
-                  "• **Schedule** — _\"Plan my day\"_ or _\"Block time for deep work\"_\n"
+                  "• **Schedule** — _\"Plan my day\"_\n"
+                  "• **Assign** — _\"Assign review PR to Alice\"_\n"
+                  "• **Blueprints** — _\"Use sprint planning blueprint\"_\n"
+                  "• **Priority** — _\"Set review PR to high priority\"_\n"
                   "• **Reschedule** — _\"Reschedule my overdue tasks\"_",
         )

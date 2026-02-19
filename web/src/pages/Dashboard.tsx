@@ -22,6 +22,7 @@ import { KanbanPage } from "./Kanban";
 import { TimelinePage } from "./Timeline";
 import { TeamWorkloadPage } from "./TeamWorkload";
 import { BlueprintsPage } from "./Blueprints";
+import { CommandCenterPage } from "./CommandCenter";
 import { ProjectVault } from "./ProjectVault";
 import { GraphView } from "../components/GraphView";
 import { WeeklyReview } from "./WeeklyReview";
@@ -167,6 +168,8 @@ export function Dashboard() {
             case "tasks":
                 return <TasksPage view="inbox" onTaskSelect={onTaskClick} />;
             case "today":
+            case "home":
+                return <CommandCenterPage />;
             case "overdue":
             case "upcoming":
             case "all":

@@ -259,6 +259,13 @@ export const api = {
     projectGraphData: () => request<{ nodes: any[], links: any[] }>("projects/graph/data"),
     semanticSearch: (q: string) => request<{ tasks: any[], projects: any[] }>(`/v1/search/semantic?q=${encodeURIComponent(q)}`),
 
+    // Notifications (Phase 4A)
+    notificationList: (unreadOnly?: boolean) =>
+        request<{ notifications: any[]; unread_count: number }>(`/v1/notifications${unreadOnly ? "?unread_only=true" : ""}`),
+    notificationMarkRead: (id?: number) =>
+        request<{ marked: number }>(`/v1/notifications/mark-read`, { method: "POST", body: JSON.stringify(id ? { notification_id: id } : {}) }),
+    notificationGenerateDigest: () => request<any>(`/v1/notifications/generate-digest`, { method: "POST" }),
+
     analyticsStats: () => request<{
         total_tasks: number;
         completed_tasks: number;

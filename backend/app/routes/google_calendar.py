@@ -265,3 +265,85 @@ def push(db: Session = Depends(get_db)):
             continue
     db.commit()
     return {"pushed": pushed}
+
+
+@router.post("/push-focus-blocks", dependencies=[Depends(require_api_key)])
+def push_focus_blocks(db: Session = Depends(get_db)):
+    """Push auto-planned focus blocks as Google Calendar events with proper times."""
+    integ = get_integration(db)
+    token = ensure_token(db, integ)
+    headers_gcal = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+
+    from app.routes.auto_plan import _auto_plan_logic
+    items, msg, focus_mins = _auto_plan_logic(db)
+
+    pushed = 0
+    from datetime import datetime as dt, timedelta
+    today = dt.utcnow().date()
+    for item in items:
+        start_time = item.start_time
+        end_time = item.end_time
+
+        body = {
+            "summary": f"🔒 {item.title}",
+            "description": f"Focus block — {item.block_label}\n{item.rationale}",
+            "start": {"dateTime": f"{today}T{start_time}:00Z"},
+            "end": {"dateTime": f"{today}T{end_time}:00Z"},
+            "colorId": "1",  # Lavender
+        }
+        resp = requests.post(CAL_EVENTS, headers=headers_gcal, json=body, timeout=15)
+        if resp.status_code in (200, 201):
+            pushed += 1
+
+    return {"pushed": pushed, "total_blocks": len(items), "focus_minutes": focus_mins}
+
+
+@router.post("/import-constraints", dependencies=[Depends(require_api_key)])
+def import_constraints(db: Session = Depends(get_db)):
+    """Pull today's calendar events and store as busy slots for the scheduler."""
+    integ = get_integration(db)
+    token = ensure_token(db, integ)
+    cal_headers = {"Authorization": f"Bearer {token}"}
+
+    from datetime import datetime as dt, timedelta
+    today = dt.utcnow().date()
+    time_min = f"{today}T00:00:00Z"
+    time_max = f"{today}T23:59:59Z"
+
+    resp = requests.get(
+        CAL_EVENTS, headers=cal_headers, timeout=15,
+        params={
+            "timeMin": time_min,
+            "timeMax": time_max,
+            "singleEvents": True,
+            "orderBy": "startTime",
+            "maxResults": 50,
+        },
+    )
+    if resp.status_code != 200:
+        raise HTTPException(status_code=400, detail=resp.text)
+
+    events = resp.json().get("items", [])
+    busy_slots = []
+
+    for ev in events:
+        start = ev.get("start", {})
+        end = ev.get("end", {})
+        start_dt = start.get("dateTime")
+        end_dt = end.get("dateTime")
+        if start_dt and end_dt:
+            busy_slots.append({
+                "title": ev.get("summary", "Busy"),
+                "start": start_dt,
+                "end": end_dt,
+            })
+
+    # Store busy slots in integration config for scheduler to read
+    cfg = integ.config_json or {}
+    cfg["busy_slots"] = busy_slots
+    cfg["busy_slots_date"] = str(today)
+    integ.config_json = cfg
+    db.commit()
+
+    return {"imported": len(busy_slots), "date": str(today), "slots": busy_slots}
+

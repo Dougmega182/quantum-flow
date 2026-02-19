@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useLogout } from "./ApiKeyGate";
 import { PomodoroTimer } from "./PomodoroTimer";
 import { ThemeToggle } from "./ThemeToggle";
+import { NotificationBell } from "./NotificationCenter";
 import { api } from "../lib/api";
 
 interface HeaderProps {
@@ -80,6 +81,7 @@ export function Header({ onTabSelect }: HeaderProps) {
             {/* Right: Actions & Profile */}
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <ThemeToggle />
+                <NotificationBell onNavigate={onTabSelect} />
 
                 <div style={{ position: "relative" }}>
                     <div

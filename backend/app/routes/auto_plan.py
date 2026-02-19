@@ -130,6 +130,34 @@ def _auto_plan_logic(db: Session) -> tuple[list[AutoPlanItem], str, int]:
     tasks = _topological_sort(tasks)
     clusters = _cluster_by_label(tasks)
 
+    # ── Load busy slots from calendar import (Phase 4B) ───────
+    busy_slots: list[tuple[datetime, datetime]] = []
+    try:
+        integ = (
+            db.query(models.Integration)
+            .filter(models.Integration.user_id == DEFAULT_USER_ID, models.Integration.provider == "google_calendar")
+            .first()
+        )
+        if integ and integ.config_json:
+            cfg = integ.config_json
+            today_str = str(now.date())
+            if cfg.get("busy_slots_date") == today_str:
+                for slot in cfg.get("busy_slots", []):
+                    try:
+                        s = datetime.fromisoformat(slot["start"].replace("Z", "+00:00"))
+                        e = datetime.fromisoformat(slot["end"].replace("Z", "+00:00"))
+                        busy_slots.append((s, e))
+                    except (KeyError, ValueError):
+                        pass
+    except Exception:
+        pass  # graceful fallback if no calendar integration
+
+    def _is_busy(start: datetime, end: datetime) -> bool:
+        for bs, be in busy_slots:
+            if start < be and end > bs:  # overlap check
+                return True
+        return False
+
     high_energy_clusters = []
     other_clusters = []
     for label, cluster_tasks in clusters.items():
@@ -169,6 +197,17 @@ def _auto_plan_logic(db: Session) -> tuple[list[AutoPlanItem], str, int]:
 
             if end_time > end_of_day:
                 continue
+
+            # Skip busy slots from imported calendar (Phase 4B)
+            if _is_busy(current_time, end_time):
+                # Advance past the conflicting busy slot
+                for bs, be in busy_slots:
+                    if current_time < be and end_time > bs:
+                        current_time = be + timedelta(minutes=5)
+                        break
+                end_time = current_time + timedelta(minutes=duration)
+                if end_time > end_of_day:
+                    continue
 
             is_peak = current_time.hour in peak_hours
             is_high = (t.energy_level or "").lower() == "high"
