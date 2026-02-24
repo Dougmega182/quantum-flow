@@ -1,5 +1,11 @@
 import os
-from sentence_transformers import SentenceTransformer
+
+try:
+    from sentence_transformers import SentenceTransformer
+    _HAS_ML = True
+except ImportError:
+    _HAS_ML = False
+
 from sqlalchemy.orm import Session
 from app import models
 
@@ -9,12 +15,14 @@ model = None
 
 def get_model():
     global model
+    if not _HAS_ML:
+        return None
     if model is None:
         model = SentenceTransformer(MODEL_NAME)
     return model
 
 def compute_embedding(text: str):
-    if not text:
+    if not text or not _HAS_ML:
         return [0.0] * 384
     return get_model().encode(text).tolist()
 

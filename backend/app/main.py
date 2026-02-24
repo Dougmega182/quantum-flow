@@ -16,6 +16,20 @@ from app.config import settings
 from app.routes import google_calendar, analytics, ingest, users, projects, search
 app = FastAPI(title="Quantum Flow Intent Service", version="0.1")
 
+# Auto-create tables on startup
+@app.on_event("startup")
+def on_startup():
+    from app.db import engine, Base
+    from sqlalchemy import text
+    import app.models  # noqa — triggers all model imports
+    with engine.connect() as conn:
+        conn.execute(text("CREATE EXTENSION IF NOT EXISTS citext"))
+        conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+        conn.commit()
+    Base.metadata.create_all(bind=engine)
+    print("✅ Database tables ensured.", flush=True)
+
+
 # CORS
 ALLOW_ORIGINS = [o.strip() for o in os.getenv("ALLOW_ORIGINS", "*").split(",") if o.strip()]
 # Add ngrok if present
