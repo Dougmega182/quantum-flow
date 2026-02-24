@@ -27,6 +27,9 @@ import { ProjectVault } from "./ProjectVault";
 import { GraphView } from "../components/GraphView";
 import { WeeklyReview } from "./WeeklyReview";
 import { SemanticSearch } from "../components/SemanticSearch";
+import { TimeTracker } from "./TimeTracker";
+import { GoalsPage } from "./Goals";
+import { ActivityFeed } from "./ActivityFeed";
 
 export function Dashboard() {
     const [activeTab, setTab] = useState<any>("today");
@@ -192,6 +195,9 @@ export function Dashboard() {
             case "timeline": return <TimelinePage />;
             case "team": return <TeamWorkloadPage />;
             case "blueprints": return <BlueprintsPage />;
+            case "time_tracker": return <TimeTracker />;
+            case "goals": return <GoalsPage />;
+            case "activity": return <ActivityFeed />;
             case "planning": return <PlanningWizard onComplete={() => setTab("today")} />;
             default: return <TasksPage onTaskSelect={onTaskClick} />;
         }

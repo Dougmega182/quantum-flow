@@ -36,6 +36,9 @@ export function Sidebar({
         { id: "planning", label: "Daily Planning", icon: "☀️" },
         { id: "team", label: "Team", icon: "👥" },
         { id: "blueprints", label: "Blueprints", icon: "📋" },
+        { id: "time_tracker", label: "Time Tracker", icon: "⏱️" },
+        { id: "goals", label: "Goals & OKRs", icon: "🎯" },
+        { id: "activity", label: "Activity Feed", icon: "📰" },
     ];
 
     return (

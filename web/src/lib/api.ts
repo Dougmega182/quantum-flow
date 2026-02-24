@@ -281,6 +281,27 @@ export const api = {
         comparison: { this_week: number; last_week: number; change_pct: number };
     }>(`/v1/analytics/deep`),
 
+    // Time Tracking (Phase 5A)
+    timeStart: (task_id: number) => request<any>(`/v1/time/start`, { method: "POST", body: JSON.stringify({ task_id }) }),
+    timeStop: (entry_id: number) => request<any>(`/v1/time/stop`, { method: "POST", body: JSON.stringify({ entry_id }) }),
+    timeRunning: () => request<{ running: boolean; entry: any }>(`/v1/time/running`),
+    timeEntries: (task_id?: number) => request<{ entries: any[] }>(`/v1/time/entries${task_id ? `?task_id=${task_id}` : ""}`),
+    timeAnalysis: () => request<{ comparisons: any[]; summary: any }>(`/v1/time/analysis`),
+
+    // Goals & OKRs (Phase 5B)
+    goalsList: () => request<{ goals: any[] }>(`/v1/goals`),
+    goalCreate: (body: { title: string; description?: string; target_value?: number; unit?: string }) =>
+        request<any>(`/v1/goals`, { method: "POST", body: JSON.stringify(body) }),
+    goalUpdate: (id: number, body: any) =>
+        request<any>(`/v1/goals/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+    goalDelete: (id: number) => request<any>(`/v1/goals/${id}`, { method: "DELETE" }),
+    goalLinkTask: (goal_id: number, task_id: number) =>
+        request<any>(`/v1/goals/${goal_id}/link`, { method: "POST", body: JSON.stringify({ task_id }) }),
+    goalProgress: (id: number) => request<any>(`/v1/goals/${id}/progress`),
+
+    // Activity Feed (Phase 5C)
+    activityList: (limit?: number) => request<{ activities: any[] }>(`/v1/activity${limit ? `?limit=${limit}` : ""}`),
+
     // User Profile
     userMe: () => request<{ id: number; email: string; avatar_url: string | null }>(`/v1/users/me`),
     userUpdateMe: (body: { avatar_url: string }) => request<{ id: number; email: string; avatar_url: string | null }>(`/v1/users/me`, { method: "PATCH", body: JSON.stringify(body) }),

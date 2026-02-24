@@ -8,6 +8,9 @@ from app.routes import milestones as milestones_route
 from app.routes import team as team_route
 from app.routes import blueprints as blueprints_route
 from app.routes import notifications as notifications_route
+from app.routes import time_tracking as time_tracking_route
+from app.routes import goals as goals_route
+from app.routes import activity as activity_route
 from fastapi import Request, Header, HTTPException
 from app.config import settings
 from app.routes import google_calendar, analytics, ingest, users, projects, search
@@ -80,3 +83,6 @@ app.include_router(milestones_route.router, dependencies=[Depends(require_api_ke
 app.include_router(team_route.router, dependencies=[Depends(require_api_key)])
 app.include_router(blueprints_route.router, dependencies=[Depends(require_api_key)])
 app.include_router(notifications_route.router, dependencies=[Depends(require_api_key)])
+app.include_router(time_tracking_route.router, dependencies=[Depends(require_api_key)])
+app.include_router(goals_route.router, dependencies=[Depends(require_api_key)])
+app.include_router(activity_route.router, dependencies=[Depends(require_api_key)])
