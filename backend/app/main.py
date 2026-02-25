@@ -29,6 +29,21 @@ def on_startup():
     Base.metadata.create_all(bind=engine)
     print("✅ Database tables ensured.", flush=True)
 
+    # Seed default user if none exists
+    from app.db import SessionLocal
+    from app.models.user import User
+    db = SessionLocal()
+    try:
+        if db.query(User).count() == 0:
+            db.add(User(email="admin@quantumflow.dev"))
+            db.commit()
+            print("✅ Default user seeded (admin@quantumflow.dev).", flush=True)
+    except Exception as e:
+        db.rollback()
+        print(f"⚠️ User seed skipped: {e}", flush=True)
+    finally:
+        db.close()
+
 
 # CORS
 ALLOW_ORIGINS = [o.strip() for o in os.getenv("ALLOW_ORIGINS", "*").split(",") if o.strip()]
