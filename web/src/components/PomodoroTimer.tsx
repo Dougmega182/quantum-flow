@@ -112,7 +112,7 @@ export function PomodoroTimer() {
                 display: "flex",
                 alignItems: "center",
                 gap: 12,
-                backgroundColor: "rgba(255, 255, 255, 0.9)",
+                backgroundColor: "var(--bg-card)",
                 padding: "6px 14px",
                 borderRadius: 24,
                 border: "1px solid var(--border-color)",
@@ -127,7 +127,7 @@ export function PomodoroTimer() {
                             cy="14"
                             r={radius}
                             fill="none"
-                            stroke="#e2e8f0"
+                            stroke="var(--border-color)"
                             strokeWidth="2"
                         />
                         <circle
@@ -191,7 +191,7 @@ export function PomodoroTimer() {
                     position: "absolute",
                     top: 48,
                     right: 0,
-                    backgroundColor: "#fff",
+                    backgroundColor: "var(--bg-card)",
                     borderRadius: 16,
                     boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
                     border: "1px solid var(--border-color)",
@@ -248,7 +248,7 @@ export function PomodoroTimer() {
                             marginTop: 16,
                             padding: "10px",
                             borderRadius: 10,
-                            backgroundColor: "#f8fafc",
+                            backgroundColor: "var(--bg-hover)",
                             border: "none",
                             fontSize: 12,
                             fontWeight: 700,
