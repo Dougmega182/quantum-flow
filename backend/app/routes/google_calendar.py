@@ -31,13 +31,20 @@ def get_integration(db: Session):
         models.Integration.provider == "google_calendar"
     ).first()
     if not integ:
-        integ = models.Integration(
-            user_id=DEFAULT_USER_ID,
-            provider="google_calendar",
-            status="disconnected",
-            config_json={}
-        )
-        db.add(integ); db.commit(); db.refresh(integ)
+        try:
+            integ = models.Integration(
+                user_id=DEFAULT_USER_ID,
+                provider="google_calendar",
+                status="disconnected",
+                config_json={}
+            )
+            db.add(integ); db.commit(); db.refresh(integ)
+        except Exception:
+            db.rollback()
+            integ = db.query(models.Integration).filter(
+                models.Integration.user_id == DEFAULT_USER_ID,
+                models.Integration.provider == "google_calendar"
+            ).first()
     return integ
 
 def save_tokens(db: Session, integ, data: dict):
@@ -99,9 +106,12 @@ def callback(code: str = Query(...), db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail=resp.text)
     data = resp.json()
     save_tokens(db, integ, data)
-    # Redirect back to the frontend to avoid showing JSON to the user
+    # Redirect back to frontend — use ALLOW_ORIGINS to determine correct host
+    import os
+    origins = os.getenv("ALLOW_ORIGINS", "http://localhost:5173")
+    frontend_url = origins.split(",")[-1].strip()  # prefer ngrok origin if listed
     from fastapi.responses import RedirectResponse
-    return RedirectResponse(url="http://localhost:5173/integrations")
+    return RedirectResponse(url=f"{frontend_url}")
 
 @router.get("/status", dependencies=[Depends(require_api_key)])
 def status(db: Session = Depends(get_db)):
