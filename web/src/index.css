@@ -1,27 +1,40 @@
 :root {
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 
-  /* Theme-aware variables */
-  --bg-app: #ffffff;
+  /* ── Backgrounds ──────────────────────────── */
+  --bg-app: #f8f9fb;
+  --bg-main: #ffffff;
   --bg-card: #ffffff;
-  --bg-sidebar: #111111;
-  --sidebar-text: #a1a1a1;
-  --sidebar-text-active: #ffffff;
-  --sidebar-hover: rgba(255, 255, 255, 0.08);
+  --bg-hover: #f1f5f9;
+  --bg-input: #ffffff;
+  --bg-context: #fafbfc;
 
+  /* ── Sidebar (light = soft gray) ──────────── */
+  --bg-sidebar: #f1f2f6;
+  --sidebar-text: #64748b;
+  --sidebar-text-active: #0f172a;
+  --sidebar-hover: rgba(0, 0, 0, 0.06);
+
+  /* ── Text ──────────────────────────────────── */
   --text-main: #0a0a0a;
+  --text-primary: #0f172a;
   --text-muted: #64748b;
-  --border-color: #f1f5f9;
 
+  /* ── Borders ───────────────────────────────── */
+  --border-color: #e2e8f0;
+
+  /* ── Brand ─────────────────────────────────── */
   --brand-color: #9333ea;
   --brand-light: #f3e8ff;
   --brand-muted: rgba(147, 51, 234, 0.1);
 
+  /* ── Status ────────────────────────────────── */
   --status-open: #3b82f6;
   --status-done: #10b981;
   --status-overdue: #ef4444;
   --status-bg-open: #eff6ff;
   --status-bg-done: #ecfdf5;
+  --status-bg-overdue: #fef2f2;
 
   font-family: var(--font-sans);
   line-height: 1.5;
@@ -34,23 +47,38 @@
 
 [data-theme='dark'] {
   color-scheme: dark;
+
+  /* ── Backgrounds ──────────────────────────── */
   --bg-app: #0a0a0a;
-  --bg-card: #171717;
-  --bg-sidebar: #0a0a0a;
+  --bg-main: #111111;
+  --bg-card: #1a1a1a;
+  --bg-hover: #262626;
+  --bg-input: #1e1e1e;
+  --bg-context: #141414;
+
+  /* ── Sidebar (dark = near-black) ──────────── */
+  --bg-sidebar: #0e0e0e;
   --sidebar-text: #737373;
   --sidebar-text-active: #ffffff;
-  --sidebar-hover: rgba(255, 255, 255, 0.05);
+  --sidebar-hover: rgba(255, 255, 255, 0.06);
 
+  /* ── Text ──────────────────────────────────── */
   --text-main: #f5f5f5;
+  --text-primary: #e5e5e5;
   --text-muted: #a1a1a1;
-  --border-color: #262626;
 
+  /* ── Borders ───────────────────────────────── */
+  --border-color: #2a2a2a;
+
+  /* ── Brand ─────────────────────────────────── */
   --brand-color: #a855f7;
   --brand-light: #2e1065;
   --brand-muted: rgba(168, 85, 247, 0.15);
 
+  /* ── Status ────────────────────────────────── */
   --status-bg-open: #172554;
   --status-bg-done: #064e3b;
+  --status-bg-overdue: #450a0a;
 }
 
 * {
@@ -62,7 +90,6 @@ body {
   padding: 0;
   min-height: 100vh;
   overflow: hidden;
-  /* App will handle internal scrolling */
 }
 
 #root {
@@ -70,10 +97,7 @@ body {
   display: flex;
 }
 
-h1,
-h2,
-h3,
-h4 {
+h1, h2, h3, h4 {
   margin: 0;
   font-weight: 600;
   color: var(--text-main);
@@ -92,9 +116,7 @@ button {
   gap: 8px;
 }
 
-input,
-textarea,
-select {
+input, textarea, select {
   font-family: inherit;
   font-size: 14px;
   padding: 8px 12px;
@@ -102,26 +124,21 @@ select {
   border-radius: 6px;
   outline: none;
   transition: border-color 0.2s;
+  background-color: var(--bg-input);
+  color: var(--text-main);
 }
 
-input:focus {
+input:focus, textarea:focus, select:focus {
   border-color: var(--brand-color);
 }
 
-/* Scrollbars */
-::-webkit-scrollbar {
-  width: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
+/* ── Scrollbars (theme-aware) ──────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: #dfe3e7;
+  background: var(--border-color);
   border-radius: 10px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: #cbd2d9;
+  background: var(--text-muted);
 }

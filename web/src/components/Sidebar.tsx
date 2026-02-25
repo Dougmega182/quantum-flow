@@ -43,17 +43,17 @@ export function Sidebar({
 
     return (
         <div style={{
-            backgroundColor: "#111111",
-            color: "#e0e0e0",
+            backgroundColor: "var(--bg-sidebar)",
+            color: "var(--sidebar-text)",
             display: "flex",
             flexDirection: "column",
             padding: "24px 0",
             userSelect: "none",
-            borderRight: "1px solid #222",
+            borderRight: "1px solid var(--border-color)",
             height: "100%",
             width: "100%"
         }}>
-            <div style={{ padding: "0 24px 28px 24px", fontSize: 16, fontWeight: 800, color: "#fff", display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ padding: "0 24px 28px 24px", fontSize: 16, fontWeight: 800, color: "var(--sidebar-text-active)", display: "flex", alignItems: "center", gap: 12 }}>
                 <img
                     src="/logo.png"
                     alt="Quantum Flow"

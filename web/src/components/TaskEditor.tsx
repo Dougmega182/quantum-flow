@@ -83,7 +83,7 @@ export function TaskEditor({ task, onClose, onUpdate }: TaskEditorProps) {
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
                     <span style={{ fontSize: 13, opacity: 0.5, width: 80 }}>Priority</span>
-                    <select value={priority} onChange={e => setPriority(e.target.value)} style={{ border: "none", padding: "6px 10px", backgroundColor: "#f3f4f6", borderRadius: 6, fontSize: 13, outline: "none" }}>
+                    <select value={priority} onChange={e => setPriority(e.target.value)} style={{ border: "none", padding: "6px 10px", backgroundColor: "var(--bg-hover)", borderRadius: 6, fontSize: 13, outline: "none" }}>
                         <option value="low">Low</option>
                         <option value="medium">Medium</option>
                         <option value="high">High</option>
@@ -92,7 +92,7 @@ export function TaskEditor({ task, onClose, onUpdate }: TaskEditorProps) {
 
                 <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
                     <span style={{ fontSize: 13, opacity: 0.5, width: 80 }}>Due Date</span>
-                    <input type="date" value={dueAt} onChange={e => setDueAt(e.target.value)} style={{ border: "none", padding: "6px 10px", backgroundColor: "#f3f4f6", borderRadius: 6, fontSize: 13, outline: "none" }} />
+                    <input type="date" value={dueAt} onChange={e => setDueAt(e.target.value)} style={{ border: "none", padding: "6px 10px", backgroundColor: "var(--bg-hover)", borderRadius: 6, fontSize: 13, outline: "none" }} />
                 </div>
 
                 <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
@@ -102,7 +102,7 @@ export function TaskEditor({ task, onClose, onUpdate }: TaskEditorProps) {
                             type="number"
                             value={duration}
                             onChange={e => setDuration(Number(e.target.value))}
-                            style={{ border: "none", padding: "6px 10px", backgroundColor: "#f3f4f6", borderRadius: 6, fontSize: 13, width: 60, outline: "none" }}
+                            style={{ border: "none", padding: "6px 10px", backgroundColor: "var(--bg-hover)", borderRadius: 6, fontSize: 13, width: 60, outline: "none" }}
                         />
                         <span style={{ fontSize: 12, opacity: 0.5 }}>mins</span>
                     </div>
@@ -114,7 +114,7 @@ export function TaskEditor({ task, onClose, onUpdate }: TaskEditorProps) {
                         value={labels}
                         onChange={e => setLabels(e.target.value)}
                         placeholder="Work, urgent..."
-                        style={{ border: "none", padding: "6px 10px", backgroundColor: "#f3f4f6", borderRadius: 6, flex: 1, fontSize: 13, outline: "none" }}
+                        style={{ border: "none", padding: "6px 10px", backgroundColor: "var(--bg-hover)", borderRadius: 6, flex: 1, fontSize: 13, outline: "none" }}
                     />
                 </div>
 
@@ -123,7 +123,7 @@ export function TaskEditor({ task, onClose, onUpdate }: TaskEditorProps) {
                     <select
                         value={energyLevel}
                         onChange={e => setEnergyLevel(e.target.value)}
-                        style={{ border: "none", padding: "6px 10px", backgroundColor: "#f3f4f6", borderRadius: 6, flex: 1, fontSize: 13, outline: "none", appearance: "none", cursor: "pointer" }}
+                        style={{ border: "none", padding: "6px 10px", backgroundColor: "var(--bg-hover)", borderRadius: 6, flex: 1, fontSize: 13, outline: "none", appearance: "none", cursor: "pointer" }}
                     >
                         <option value="low">Low Energy (Reading, Admin) 🔋</option>
                         <option value="medium">Medium Energy (Meetings, Coding) ⚡</option>
@@ -146,7 +146,7 @@ export function TaskEditor({ task, onClose, onUpdate }: TaskEditorProps) {
                                 setDepId(task.depends_on_id || null);
                             }
                         }}
-                        style={{ border: "none", padding: "6px 10px", backgroundColor: "#f3f4f6", borderRadius: 6, flex: 1, fontSize: 13, outline: "none" }}
+                        style={{ border: "none", padding: "6px 10px", backgroundColor: "var(--bg-hover)", borderRadius: 6, flex: 1, fontSize: 13, outline: "none" }}
                     >
                         <option value="">No dependency</option>
                         {allTasks.filter(t => t.status !== "done").map(t => (
@@ -156,7 +156,7 @@ export function TaskEditor({ task, onClose, onUpdate }: TaskEditorProps) {
                 </div>
             </div>
 
-            <div style={{ height: 1, backgroundColor: "#f0f0f0", margin: "4px 0" }} />
+            <div style={{ height: 1, backgroundColor: "var(--border-color)", margin: "4px 0" }} />
 
             <div>
                 <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Subtasks</h4>
@@ -169,7 +169,7 @@ export function TaskEditor({ task, onClose, onUpdate }: TaskEditorProps) {
                             fontSize: 13,
                             padding: "4px 8px",
                             borderRadius: 6,
-                            backgroundColor: "#f8fafc"
+                            backgroundColor: "var(--bg-hover)"
                         }}>
                             <input
                                 type="checkbox"
@@ -212,7 +212,7 @@ export function TaskEditor({ task, onClose, onUpdate }: TaskEditorProps) {
                     value={description}
                     onChange={e => setDescription(e.target.value)}
                     placeholder="Add details..."
-                    style={{ flex: 1, backgroundColor: "#fcfcfd", padding: 12, borderRadius: 8, resize: "none", fontSize: 14, outline: "none", border: "1px solid #f0f0f0", minHeight: 120 }}
+                    style={{ flex: 1, backgroundColor: "var(--bg-input)", padding: 12, borderRadius: 8, resize: "none", fontSize: 14, outline: "none", border: "1px solid var(--border-color)", minHeight: 120, color: "var(--text-main)" }}
                 />
             </div>
         </div>

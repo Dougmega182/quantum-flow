@@ -37,7 +37,7 @@ export function Header({ onTabSelect }: HeaderProps) {
             justifyContent: "space-between",
             padding: "0 24px",
             borderBottom: "1px solid var(--border-color)",
-            backgroundColor: "#fff",
+            backgroundColor: "var(--bg-main)",
             position: "sticky",
             top: 0,
             zIndex: 100
@@ -53,7 +53,7 @@ export function Header({ onTabSelect }: HeaderProps) {
                             padding: "8px 12px 8px 36px",
                             borderRadius: 8,
                             border: "1px solid transparent",
-                            backgroundColor: "#f1f5f9",
+                            backgroundColor: "var(--bg-hover)",
                             fontSize: 14,
                             outline: "none"
                         }}
@@ -67,7 +67,7 @@ export function Header({ onTabSelect }: HeaderProps) {
                     padding: "4px 12px",
                     borderRadius: 8,
                     border: "1px solid var(--border-color)",
-                    backgroundColor: "#fff",
+                    backgroundColor: "var(--bg-main)",
                     fontSize: 13,
                     fontWeight: 600,
                     color: "var(--text-muted)"
@@ -90,13 +90,13 @@ export function Header({ onTabSelect }: HeaderProps) {
                             width: 32,
                             height: 32,
                             borderRadius: "50%",
-                            backgroundColor: "#e2e8f0",
+                            backgroundColor: "var(--border-color)",
                             backgroundImage: `url('${user?.avatar_url || "https://i.pravatar.cc/100?u=quantum"}')`,
                             backgroundSize: "cover",
                             backgroundPosition: "center",
                             cursor: "pointer",
-                            border: "2px solid #fff",
-                            boxShadow: "0 0 0 1px #e2e8f0"
+                            border: "2px solid var(--bg-main)",
+                            boxShadow: "0 0 0 1px var(--border-color)"
                         }}
                     />
 
@@ -111,7 +111,7 @@ export function Header({ onTabSelect }: HeaderProps) {
                                 top: 44,
                                 right: 0,
                                 width: 280,
-                                backgroundColor: "#fff",
+                                backgroundColor: "var(--bg-card)",
                                 borderRadius: 12,
                                 boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
                                 border: "1px solid var(--border-color)",
@@ -140,7 +140,7 @@ export function Header({ onTabSelect }: HeaderProps) {
                                                 gap: 12,
                                                 transition: "background 0.1s"
                                             }}
-                                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f8fafc")}
+                                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-hover)")}
                                             onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
                                         >
                                             <span style={{ fontSize: 16 }}>{item.icon}</span>

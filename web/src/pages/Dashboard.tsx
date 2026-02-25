@@ -288,7 +288,7 @@ export function Dashboard() {
                 {/* Column 3: Context Pane (Calendar or Editor) */}
                 <aside style={{
                     width: contextWidth,
-                    backgroundColor: "#fff",
+                    backgroundColor: "var(--bg-context)",
                     padding: "24px",
                     display: "flex",
                     flexDirection: "column",
@@ -296,7 +296,8 @@ export function Dashboard() {
                     boxShadow: "-4px 0 20px rgba(0,0,0,0.01)",
                     flexShrink: 0,
                     position: "relative",
-                    overflowY: "auto"
+                    overflowY: "auto",
+                    color: "var(--text-main)"
                 }}>
                     {/* Resize Handle (Left of Aside) */}
                     <div
@@ -362,7 +363,7 @@ export function Dashboard() {
                             </div>
 
                             {planMessage && (
-                                <div style={{ fontSize: 12, padding: "8px 12px", backgroundColor: "#f0fdf4", borderRadius: 8, marginBottom: 12, color: "#166534", fontWeight: 600 }}>
+                                <div style={{ fontSize: 12, padding: "8px 12px", backgroundColor: "var(--status-bg-done)", borderRadius: 8, marginBottom: 12, color: "var(--status-done)", fontWeight: 600 }}>
                                     {planMessage}
                                 </div>
                             )}
@@ -400,7 +401,7 @@ export function Dashboard() {
                                             onDragOver={(e) => {
                                                 e.preventDefault();
                                                 e.dataTransfer.dropEffect = "move";
-                                                e.currentTarget.style.backgroundColor = "#f8fafc";
+                                                e.currentTarget.style.backgroundColor = "var(--bg-hover)";
                                             }}
                                             onDragLeave={(e) => {
                                                 e.currentTarget.style.backgroundColor = "transparent";
@@ -420,7 +421,7 @@ export function Dashboard() {
                                                     setTab("today"); // Force refresh
                                                 }
                                             }}
-                                            style={{ height: 60, borderTop: "1px solid #f0f0f0", position: "relative", transition: "background 0.2s" }}
+                                            style={{ height: 60, borderTop: "1px solid var(--border-color)", position: "relative", transition: "background 0.2s" }}
                                         >
                                             <div style={{ position: "absolute", top: -8, left: 0, fontSize: 11, opacity: 0.3, fontWeight: 700 }}>
                                                 {hour > 12 ? `${hour - 12} PM` : `${hour} AM`}
@@ -444,7 +445,7 @@ export function Dashboard() {
                                             left: 40,
                                             right: 0,
                                             height: height,
-                                            backgroundColor: item.block_label ? "var(--brand-light)" : "#f0f7ff",
+                                            backgroundColor: item.block_label ? "var(--brand-light)" : "var(--status-bg-open)",
                                             borderLeft: `4px solid ${item.block_label ? "var(--brand-color)" : "#3b82f6"}`,
                                             borderRadius: "0 8px 8px 0",
                                             padding: "8px 12px",
