@@ -64,7 +64,7 @@ services:
     command:
       - "http"
       - "http://api:8005"
-      - "--domain=parakeet-novel-accurately.ngrok-free.app"
+      - "--url=parakeet-novel-accurately.ngrok-free.app"
     environment:
       - NGROK_AUTHTOKEN=2v51Ctml2LErcl2RTU5TcO4UJo9_5AaZckhi5w42y6ZYCoNS9
     ports:
