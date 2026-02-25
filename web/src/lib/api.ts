@@ -19,6 +19,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const headers: HeadersInit = {
         "Content-Type": "application/json",
         "X-API-Key": apiKey,
+        "ngrok-skip-browser-warning": "true",
         ...(init.headers || {}),
     };
 
