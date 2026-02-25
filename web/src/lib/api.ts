@@ -305,6 +305,17 @@ export const api = {
     // User Profile
     userMe: () => request<{ id: number; email: string; avatar_url: string | null }>(`/v1/users/me`),
     userUpdateMe: (body: { avatar_url: string }) => request<{ id: number; email: string; avatar_url: string | null }>(`/v1/users/me`, { method: "PATCH", body: JSON.stringify(body) }),
+
+    // ── Activation Intelligence™ ─────────────────────────────
+    helpMeStart: () => request<StartMeResponse>(`/v1/activation/help-me-start`),
+    scoreFriction: (taskId: number) => request<FrictionResponse>(`/v1/activation/score/${taskId}`, { method: "POST" }),
+    logIntervention: (body: { task_id: number; intervention_type: string; outcome: string; start_latency_seconds?: number }) =>
+        request<{ status: string }>(`/v1/activation/log-intervention`, { method: "POST", body: JSON.stringify(body) }),
+    logActivationEvent: (body: { task_id?: number; event_type: string; metadata?: any }) =>
+        request<{ status: string }>(`/v1/activation/log-event`, { method: "POST", body: JSON.stringify(body) }),
+    trackTaskOpened: (taskId: number) => request<{ status: string }>(`/v1/activation/task-opened/${taskId}`, { method: "POST" }),
+    trackReschedule: (taskId: number) => request<any>(`/v1/activation/task-rescheduled/${taskId}`, { method: "POST" }),
+    activationStats: () => request<any>(`/v1/activation/stats`),
 };
 
 export type RecurrenceRule = {
@@ -338,4 +349,24 @@ export type AutomationRun = {
     status: "success" | "error";
     message: string | null;
     executed_at: string;
+};
+
+// ── Activation Intelligence™ Types ──────────────────────────
+
+export type StartMeResponse = {
+    task_id: number;
+    task_title: string;
+    friction_score: number;
+    micro_step: string;
+    intervention_type: string;
+    countdown_seconds: number;
+};
+
+export type FrictionResponse = {
+    task_id: number;
+    friction_score: number;
+    emotional_weight: number;
+    cognitive_load_tag: string;
+    ambiguity_level: number;
+    micro_step: string | null;
 };

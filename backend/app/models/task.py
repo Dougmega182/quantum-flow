@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Float
 from sqlalchemy.sql import func
 from pgvector.sqlalchemy import Vector
 from app.db import Base
@@ -25,3 +25,13 @@ class Task(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
     completed_at = Column(DateTime(timezone=True), nullable=True)
     deleted_at = Column(DateTime(timezone=True), nullable=True)
+
+    # ── Activation Intelligence™ fields ──────────────────────
+    friction_score = Column(Float, nullable=True)           # 1-10 activation energy score
+    emotional_weight = Column(Float, nullable=True)         # 1-10 emotional resistance
+    cognitive_load_tag = Column(String(16), nullable=True)  # deep / admin / light / creative
+    ambiguity_level = Column(Float, nullable=True)          # 1-10 how unclear the task is
+    reschedule_count = Column(Integer, nullable=False, server_default="0")  # times rescheduled
+    avoidance_count = Column(Integer, nullable=False, server_default="0")   # times opened but not started
+    last_opened_at = Column(DateTime(timezone=True), nullable=True)  # last time user viewed task
+    micro_step = Column(Text, nullable=True)                # AI-generated "first 90 seconds" action

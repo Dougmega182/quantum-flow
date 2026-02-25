@@ -21,3 +21,6 @@ from app.models.notification import Notification
 from app.models.time_entry import TimeEntry
 from app.models.goal import Goal, GoalTask
 from app.models.activity import Activity
+# Activation Intelligence
+from app.models.intervention import Intervention
+from app.models.activation_event import ActivationEvent
