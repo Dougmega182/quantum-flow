@@ -112,7 +112,7 @@ export function AnalyticsPage() {
                                         <span style={{ fontWeight: 600, textTransform: "capitalize" }}>{p}</span>
                                         <span style={{ opacity: 0.4 }}>{c} ({pct}%)</span>
                                     </div>
-                                    <div style={{ height: 6, backgroundColor: "#f1f5f9", borderRadius: 3, overflow: "hidden" }}>
+                                    <div style={{ height: 6, backgroundColor: "var(--border-color)", borderRadius: 3, overflow: "hidden" }}>
                                         <div style={{
                                             height: "100%", width: `${pct}%`,
                                             backgroundColor: priorityColors[p] || "#94a3b8",
@@ -182,8 +182,9 @@ export function AnalyticsPage() {
 function GlassCard({ children }: { children: React.ReactNode }) {
     return (
         <div style={{
-            padding: 20, backgroundColor: "#fff", borderRadius: 16,
-            border: "1px solid #e2e8f0", boxShadow: "0 2px 8px rgba(0,0,0,0.03)",
+            padding: 20, backgroundColor: "var(--bg-card)", borderRadius: 16,
+            border: "1px solid var(--border-color)", boxShadow: "0 2px 8px rgba(0,0,0,0.03)",
+            color: "var(--text-main)",
         }}>
             {children}
         </div>

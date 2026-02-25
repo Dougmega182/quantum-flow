@@ -129,7 +129,7 @@ export function TimeTracker() {
                                 disabled={!selectedTaskId}
                                 style={{
                                     padding: "10px 24px", borderRadius: 10, fontSize: 13, fontWeight: 700,
-                                    background: selectedTaskId ? "linear-gradient(135deg, #22c55e, #16a34a)" : "#e2e8f0",
+                                    background: selectedTaskId ? "linear-gradient(135deg, #22c55e, #16a34a)" : "var(--border-color)",
                                     color: selectedTaskId ? "#fff" : "#94a3b8",
                                     border: "none", cursor: selectedTaskId ? "pointer" : "default",
                                 }}

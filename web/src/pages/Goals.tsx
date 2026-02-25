@@ -112,7 +112,7 @@ export function GoalsPage() {
                         {/* Progress Ring */}
                         <div style={{ position: "relative", width: 52, height: 52 }}>
                             <svg width="52" height="52" viewBox="0 0 52 52">
-                                <circle cx="26" cy="26" r="22" fill="none" stroke="#e2e8f0" strokeWidth="4" />
+                                <circle cx="26" cy="26" r="22" fill="none" stroke="var(--border-color)" strokeWidth="4" />
                                 <circle cx="26" cy="26" r="22" fill="none"
                                     stroke={statusColors[g.status] || "#3b82f6"}
                                     strokeWidth="4" strokeLinecap="round"
@@ -135,15 +135,15 @@ export function GoalsPage() {
                                     <span style={{
                                         marginLeft: 8, padding: "2px 8px", borderRadius: 4,
                                         fontSize: 10, fontWeight: 700,
-                                        backgroundColor: g.status === "completed" ? "#dcfce7" : "#f1f5f9",
-                                        color: g.status === "completed" ? "#16a34a" : "#64748b",
+                                        backgroundColor: g.status === "completed" ? "var(--status-bg-done)" : "var(--bg-hover)",
+                                        color: g.status === "completed" ? "var(--status-done)" : "var(--text-muted)",
                                     }}>{g.status}</span>
                                 )}
                             </div>
                         </div>
 
                         {/* Progress Bar */}
-                        <div style={{ width: 120, height: 6, borderRadius: 3, backgroundColor: "#e2e8f0", overflow: "hidden" }}>
+                        <div style={{ width: 120, height: 6, borderRadius: 3, backgroundColor: "var(--border-color)", overflow: "hidden" }}>
                             <div style={{
                                 height: "100%", borderRadius: 3,
                                 width: `${Math.min(g.progress_pct, 100)}%`,

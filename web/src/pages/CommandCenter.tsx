@@ -5,9 +5,10 @@ function GlassCard({ children, style }: { children: React.ReactNode; style?: Rea
     return (
         <div style={{
             padding: 20, borderRadius: 16,
-            background: "linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%)",
-            border: "1px solid #e8ecf4",
+            backgroundColor: "var(--bg-card)",
+            border: "1px solid var(--border-color)",
             boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+            color: "var(--text-main)",
             ...style,
         }}>
             {children}
@@ -101,8 +102,8 @@ export function CommandCenterPage() {
             {autoPlanMessage && (
                 <div style={{
                     padding: "10px 16px", borderRadius: 10,
-                    backgroundColor: "#f0fdf4", border: "1px solid #bbf7d0",
-                    fontSize: 13, fontWeight: 600, color: "#16a34a",
+                    backgroundColor: "var(--status-bg-done)", border: "1px solid var(--status-done)",
+                    fontSize: 13, fontWeight: 600, color: "var(--status-done)",
                 }}>
                     {autoPlanMessage}
                 </div>
@@ -138,14 +139,14 @@ export function CommandCenterPage() {
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                     {/* Overdue Alerts */}
                     {overdueTasks.length > 0 && (
-                        <GlassCard style={{ background: "linear-gradient(135deg, #fef2f2, #fff1f2)", borderColor: "#fecaca" }}>
+                        <GlassCard style={{ borderColor: "var(--status-overdue)" }}>
                             <div style={{ fontSize: 13, fontWeight: 800, color: "#ef4444", marginBottom: 10 }}>
                                 ⏰ {overdueTasks.length} Overdue
                             </div>
                             {overdueTasks.map((t: any) => (
                                 <div key={t.id} style={{
                                     padding: "6px 0", fontSize: 12, display: "flex", justifyContent: "space-between",
-                                    borderBottom: "1px solid #fecaca50",
+                                    borderBottom: "1px solid var(--border-color)",
                                 }}>
                                     <span style={{ fontWeight: 600 }}>{t.title}</span>
                                     <span style={{ fontSize: 10, opacity: 0.5 }}>
@@ -169,7 +170,7 @@ export function CommandCenterPage() {
                         ) : todayTasks.map((t: any) => (
                             <div key={t.id} style={{
                                 padding: "8px 0", fontSize: 12, display: "flex", alignItems: "center", gap: 8,
-                                borderBottom: "1px solid #f1f5f950",
+                                borderBottom: "1px solid var(--border-color)",
                             }}>
                                 <div style={{
                                     width: 6, height: 6, borderRadius: "50%",
@@ -215,16 +216,16 @@ export function CommandCenterPage() {
                             {teamWorkload.slice(0, 4).map((m: any) => (
                                 <div key={m.member_id} style={{
                                     display: "flex", alignItems: "center", gap: 8, padding: "5px 0",
-                                    borderBottom: "1px solid #f1f5f950",
+                                    borderBottom: "1px solid var(--border-color)",
                                 }}>
                                     <div style={{
                                         width: 24, height: 24, borderRadius: "50%",
-                                        backgroundColor: "#e2e8f0", display: "flex",
+                                        backgroundColor: "var(--bg-hover)", display: "flex",
                                         alignItems: "center", justifyContent: "center", fontSize: 10,
                                     }}>{m.name?.[0] || "?"}</div>
                                     <span style={{ flex: 1, fontSize: 12, fontWeight: 600 }}>{m.name}</span>
                                     <div style={{
-                                        width: 40, height: 4, borderRadius: 2, backgroundColor: "#e2e8f0",
+                                        width: 40, height: 4, borderRadius: 2, backgroundColor: "var(--border-color)",
                                         overflow: "hidden",
                                     }}>
                                         <div style={{
@@ -243,7 +244,7 @@ export function CommandCenterPage() {
                     )}
 
                     {/* Quick Actions */}
-                    <GlassCard style={{ background: "linear-gradient(135deg, #faf5ff, #f3e8ff)" }}>
+                    <GlassCard>
                         <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 10 }}>⚡ Quick Actions</div>
                         {[
                             { icon: "🤖", label: "AI Chat", tab: "ai-center" },
@@ -258,7 +259,7 @@ export function CommandCenterPage() {
                                     borderRadius: 8, cursor: "pointer", display: "flex", alignItems: "center", gap: 8,
                                     transition: "background 0.15s",
                                 }}
-                                onMouseEnter={e => (e.currentTarget.style.backgroundColor = "#ede9fe")}
+                                onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-hover)")}
                                 onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
                             >
                                 <span>{a.icon}</span> {a.label}
